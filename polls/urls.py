@@ -10,6 +10,7 @@ urlpatterns = patterns('',
                        url(r'^testjsp.jsp$', views.testjsp, name='testjsp'),
                        url(r'^create$', views.ajaxresponse, name='ajaxresponse'),
                        url(r'^simpletest.html$', views.simpletest, name='simpletest'),
-                       url(r'^getsequence$', views.getsequence, name='getsquence'),
+                       url(r'^kineticjstest.html$', views.kineticjstest, name='kineticjstest'),
+                       url(r'^getsequence$', views.getsequence, name='getsequence'),
 )
 

@@ -34,6 +34,9 @@ def ajaxresponse(request):
 def simpletest(request):
 	return render(request, 'simpletest.html')
 
+def kineticjstest(request):
+	return render(request, 'kineticjstest.html')
+
 def getsequence(request):
 	print "output\n"
 	s=render_to_string('test.gb')

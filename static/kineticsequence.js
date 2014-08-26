@@ -1,22 +1,23 @@
 function sequenceeditor(seq) {
-  var canvas=this.__canvas=new fabric.Canvas("c");
-  canvas.selection=false;
   dna=seq.seq;
   features=seq.features;
 
+  var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
+  var firstLayer=new Kinetic.Layer();
+  //stage.add(firstLayer);
   var fontSize=10;
+  var fontFamily='monospace';
 
   function computeFontWidth(fontSize, fontFamily) {
     var testString="AGCT";
-    var text=new fabric.Text(testString, {left: -100,top: -100, fontSize: fontSize, fontFamily: fontFamily});
-    canvas.add(text);
-    var w=text.width;
-    canvas.remove(text);
+    var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
+    firstLayer.add(text);
+    var w=text.getWidth();
+    firstLayer.remove(text);
     return w/testString.length;
   }
+  var fontWidth=computeFontWidth(fontSize, fontFamily);
 
-  var fontFamily="monospace";
-  var fontWidth=computeFontWidth(fontSize,fontFamily);
   var leftMargin=20;
   var rightMargin=20;
   var lineSeparation=20;
@@ -25,30 +26,50 @@ function sequenceeditor(seq) {
   var lineStructure={};
   var selection={start: 0, end: 0};
   var selecting=false;
-  cursor=new fabric.Rect({left: 0, top: 2, height: fontSize, width: 1, hasControls: false,
-    selectable: false, originX: 'left', originY: 'top'});
+  var cursor=new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 1, fill: 'black'});
 
   function initializeDisplay() {
-    canvas.setWidth($("#contain_canvas").width());
-    var usefulCanvasWidth=canvas.width-leftMargin-rightMargin;
+    stage.setWidth($("#contain_canvas").width());
+    var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
     lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
 
     lineStructure.lines=Math.ceil(dna.length/lineStructure.charactersPerLine);
-    canvas.setHeight(lineStructure.lines*(lineSeparation+fontSize)+fontSize);
+    stage.setHeight(lineStructure.lines*(lineSeparation+fontSize)+fontSize);
 
-    canvas.clear();
+    //canvas.clear();
     var runningTop=lineSeparation;
     lineStructure.lineList=[];
     for(i=0;i<lineStructure.lines;i++){
       var start=i*lineStructure.charactersPerLine;
       var end=Math.min(dna.length,(i+1)*lineStructure.charactersPerLine);
       var subtext=dna.substring(start,end);
-      var text=new fabric.Text(subtext, {left: 0, top: 0, hasControls: false, selectable: false, fontSize: fontSize, fontFamily: fontFamily,
-        start: start, end: end, originX: 'left'});
-      var groupSelection = new fabric.Rect({left: 0, top: 2, height: fontSize, width: 0, hasControls: false, selectable: false, opacity: 0.5});
-      var group=new fabric.Group([text,groupSelection], {left: leftMargin, top: runningTop, selectable: false, start: start,
-        end: end, features: []});
-      canvas.add(group);
+      var text=new Kinetic.Text({text: subtext, x: 0, top: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'black'});
+      var groupSelection = new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+      var group=new Kinetic.Group({x: leftMargin, y: runningTop});
+      group.start=start;
+      group.end=end;
+      group.features=[];
+      groupSelection.name='selection';
+      group.add(groupSelection);
+      group.add(text);
+
+      group.on("mousedown", function(options) {
+        selecting=true;
+        selection.end=getBase(options.evt.offsetX,this);
+        if(!options.evt.shiftKey) {selection.start=selection.end;}
+        updateSelection();
+      });
+      group.on("mousemove", function(options) {
+        if (selecting) {
+          selection.end=getBase(options.evt.offsetX,this);
+          updateSelection();
+        }
+      });
+      group.on("mouseup", function() {
+        selecting=false;
+      });
+
+      firstLayer.add(group);
       lineStructure.lineList[i]=group;
       runningTop+=lineSeparation+fontSize;
     }
@@ -97,7 +118,7 @@ function sequenceeditor(seq) {
               }
             }
             var featureDisplay=drawFeature(rangeEvents[j],line);
-            line.addWithUpdate(featureDisplay);
+            line.add(featureDisplay);
             currentCount++;
             break;
           case "end":
@@ -107,10 +128,13 @@ function sequenceeditor(seq) {
         }
 
       }
-      line.totalHeight=line.getBoundingRectHeight();//fontSize*(maximumCount+1);
+      line.totalHeight=groupHeight(line);
       if(i>0){
         var previousLine=lineStructure.lineList[i-1];
-        line.top=previousLine.top+previousLine.totalHeight;
+        var position=line.position();
+        var previousPosition=previousLine.position();
+        position.y=previousPosition.y+previousLine.totalHeight;
+        line.position(position);
       }
     }
     updateSelection();
@@ -119,78 +143,60 @@ function sequenceeditor(seq) {
   function drawFeature(rangeEvent,line) {
     var lineFeature=rangeEvent.lineFeature;
     var feature=rangeEvent.feature;
-    var leftOffset=-line.getWidth()/2;
-    var topOffset=-line.getHeight()/2;
-    //var leftOffset=line.item(0).left;
-    //var topOffset=line.item(0).top;
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
-    return new fabric.Rect({left: leftOffset+fontWidth*start, top: 2+topOffset+fontSize*(1+lineFeature.displayIndex), width: width*fontWidth, height: fontSize,
-      hasControls: false, selectable: false, originX: 'left', originY: 'top'});
-
+    return new Kinetic.Rect({x: fontWidth*start, y: 2+fontSize*(1+lineFeature.displayIndex), width: width*fontWidth, height: fontSize, fill: 'grey', stroke: 'black'});
   }
 
-  fabric.util.addListener(document.getElementById('contain_canvas'), 'scroll', function() {canvas.calcOffset();});
+  function groupHeight(group) {
+    var children=group.getChildren();
+    var height=0;
+    for(var i=0;i<children.length;i++){
+      height=Math.max(height,children[i].position().y+children[i].getHeight());
+    }
+    return height;
+  }
+
   function lineAtBase(base) {return Math.floor(base/lineStructure.charactersPerLine);}
   function groupAtBase(base) {return lineStructure.lineList[lineAtBase(base)];}
-  function getBase(X,reference) {return reference.start+Math.floor((X-reference.left)/fontWidth);}
+  function getBase(X,reference) {return reference.start+Math.floor((X-reference.position().x)/fontWidth);}
 
-  initializeDisplay();
+  function filterSelection(node) {return node.name==='selection';}
 
   function updateSelection() {
-    if (cursor.group) {cursor.group.remove(cursor);}
+    cursor.remove();
     var sortedStart=Math.min(selection.start,selection.end);
     var sortedEnd=Math.max(selection.start,selection.end);
     for(i=0;i<lineStructure.lines;i++) {
       var group=lineStructure.lineList[i];
-      group.originX='left';
-      var groupSelection=group.item(1);
-      var leftOffset=group.item(0).left;
+      var groupSelection=group.getChildren(filterSelection)[0];
       if (group.start>sortedEnd || group.end<sortedStart) {
-        groupSelection.left=leftOffset;
-        groupSelection.width=0;
+        groupSelection.position({x: 0, y: 2});
+        groupSelection.setWidth(0);
         continue;
       }
-
       var lineLeft=Math.max(0,sortedStart-group.start);
       var lineRight=Math.min(group.end-group.start,sortedEnd-group.start);
-      groupSelection.left=lineLeft*fontWidth+leftOffset;
-      groupSelection.width=(lineRight-lineLeft)*fontWidth;
+      groupSelection.position({x: lineLeft*fontWidth,y: 2});
+      groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
     }
     var cursorGroup=groupAtBase(selection.end);
     cursorGroup.add(cursor);
-    var leftOffset=cursorGroup.item(0).left;
-    var topOffset=cursorGroup.item(0).top;
-    cursor.left=leftOffset+(selection.end-cursorGroup.start)*fontWidth;
-    cursor.top=topOffset+2;
-    cursor.group=cursorGroup;
-    canvas.renderAll();
+    cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 2});
+    firstLayer.draw();
   }
-  canvas.on("mouse:down", function(options) {
-    if (options.target) {
-      selecting=true;
-      selection.end=getBase(options.e.offsetX,options.target);
-      if(!options.e.shiftKey) {selection.start=selection.end;}
-      updateSelection();
-    }
-  });
-  canvas.on("mouse:move", function(options) {
-    if (selecting && options.target) {
-      selection.end=getBase(options.e.offsetX,options.target);
-      updateSelection();
-      canvas.renderAll();
-    }
-  });
-  canvas.on("mouse:up", function(options) {
-    selecting=false;
-  });
-  setInterval(function(){
-    cursor.width=(1-cursor.width);
-    canvas.renderAll();
-  },600);
 
-  var canvasElement=document.getElementById('contain_canvas');
+
+  stage.add(firstLayer);
+  initializeDisplay();
+
+
+  setInterval(function(){
+    cursor.setWidth(1-cursor.getWidth());
+    firstLayer.draw();
+  },600);
+  var canvasElement=$('#contain_canvas')[0];
   canvasElement.tabIndex=1000;
   canvasElement.addEventListener("keydown",doKeyDown,false);
 
@@ -212,4 +218,6 @@ function sequenceeditor(seq) {
       }
     }
   }
+
+  firstLayer.draw();
 }
