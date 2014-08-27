@@ -12,5 +12,7 @@ urlpatterns = patterns('',
                        url(r'^simpletest.html$', views.simpletest, name='simpletest'),
                        url(r'^kineticjstest.html$', views.kineticjstest, name='kineticjstest'),
                        url(r'^getsequence$', views.getsequence, name='getsequence'),
+                       url(r'^getlist$', views.getlist, name='getlist'),
+                       url(r'^registerdropbox$', views.registerdropbox, name='registerdropbox'),
 )
 

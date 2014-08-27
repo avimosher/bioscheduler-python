@@ -56,9 +56,8 @@
   }
   </style>
   <script id="main" class="init">
-(function() {
   $(document).ready(function() {
-    var dataSet = [
+    /*var dataSet = [
       ['Trident','Internet Explorer 4.0','Win 95+','4','X'],
       ['Trident','Internet Explorer 5.0','Win 95+','5','C'],
       ['Trident','Internet Explorer 5.5','Win 95+','5.5','A'],
@@ -126,45 +125,83 @@
       { "title": "Platform"},
       { "title": "Version", "class": "center"},
       { "title": "Grade", "class": "center"}]
-    });
-  function getCookie(name) {
-      var cookieValue = null;
-      if (document.cookie && document.cookie != '') {
-          var cookies = document.cookie.split(';');
-          for (var i = 0; i < cookies.length; i++) {
-              var cookie = jQuery.trim(cookies[i]);
-              // Does this cookie string begin with the name we want?
-              if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;
-              }
-          }
-      }
-      return cookieValue;
-  }
-  var csrftoken = getCookie('csrftoken');
+    });*/
+    function getCookie(name) {
+        var cookieValue = null;
+        if (document.cookie && document.cookie != '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = jQuery.trim(cookies[i]);
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    var csrftoken = getCookie('csrftoken');
 
-  $.ajax({
+    $.ajax({
       url: "getsequence",
-          type: "POST",
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          },          
-          beforeSend: function(xhr) {
-            xhr.setRequestHeader("Accept", "application/json");
-            xhr.setRequestHeader("Content-Type", "application/json");
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-          },
-          
-          success: function(seq) {
-            sequenceeditor(seq);
-          }
+      type: "POST",
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },          
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+      },
+      
+      success: function(seq) {
+        sequenceeditor(seq);
+      }
     });
-  
-    event.preventDefault();
+
+    $.ajax({
+      url: "getlist",
+      type: "POST",
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },          
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+      },
+      
+      success: function(seqList) {
+        $('#demo').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
+        $('#example').dataTable( {
+          "data" : seqList,
+          "columns": [
+          { "title": "Name"},
+          { "title": "Length", "class": "center"}]
+        });
+      }
+    });
+
+    $('#dropboxform').submit(function(e) {
+      var formURL=$(this).attr("action");
+      $.ajax({
+        url: formURL,
+        type: "POST",
+        data: {key: $('#dropboxkey').val()},
+        traditional: true,
+        dataType: 'html',
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        },
+        success: function() {
+        }      
+      });
+      e.preventDefault();
+    });
   });
-})();
 
 
 </script>
@@ -176,6 +213,11 @@
 <h1 style="margin-bottom:0;">Main Title of Web Page</h1></div>
 
 <div id="leftDiv">
+<form name="dropboxform" id="dropboxform" action="registerdropbox" method="POST">
+{% csrf_token %}
+Dropbox key: <input type="text" name="dropboxkey" id="dropboxkey" />
+</form>
+<b>{{ dropboxurl }}</b>
 <b>Menu</b><br>
 <div id="demo"></div>
 HTML<br>
