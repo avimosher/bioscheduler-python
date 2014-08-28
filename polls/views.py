@@ -95,7 +95,14 @@ def kineticjstest(request):
 	return render_to_response('kineticjstest.html', {'dropboxurl': authorize_url}, RequestContext(request))
 
 def getsequence(request):
-	s=render_to_string('test.gb')
+	absolute_path=request.POST['name']
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		with client.get_file(absolute_path) as f:
+			s=f.read()
+	except:
+		print 'Exception'
+	#s=render_to_string(absolute_path[1:])
 	seq=SeqIO.read(StringIO.StringIO(s), "genbank")
 	output=StringIO.StringIO()
 	SeqIO.write(seq, output, "json")

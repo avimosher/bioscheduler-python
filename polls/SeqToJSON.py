@@ -61,7 +61,10 @@ class SeqToJSON(SequentialSequenceWriter):
         for attr in self.attributes:
             if hasattr(record, attr):
                 jsonSeq.update( { attr : getattr( record, attr )})
-        write( json.dumps(jsonSeq) )
+        # references come through in a weird format that dumps can't handle
+        jsonSeq['annotations']['references']=[]
+        ds=json.dumps(jsonSeq)
+        write( ds )
         self._record_written = True
     def write_records(self, records):
         self.write_header()
