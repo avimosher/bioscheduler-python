@@ -47,7 +47,6 @@
     width: 30vw;
     height: 90vh;
     background-color: #FFD8D8;
-    overflow-x: auto;
   }
   #rightDiv
   {
@@ -125,6 +124,16 @@
         $('#example tbody').on('dblclick', 'tr', function() {
           var name=$('td',this).eq(0).text(); // this is how the datatables demo does it, sadly
           loadsequence(name);
+        });
+        $('#example > tbody > tr').draggable({
+          //containment: "#outer",
+          helper: function(event) {
+            var _this=$(this);
+            var new_ele=$('<li></li>')
+              .append('<span>stuff</span>');
+            return new_ele.clone();
+          },
+          appendTo: 'body'
         });
       }
     });
