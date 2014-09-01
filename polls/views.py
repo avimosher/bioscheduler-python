@@ -1,5 +1,5 @@
 from django.shortcuts import render, render_to_response
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from django.template import RequestContext
 import json
@@ -47,7 +47,7 @@ def registerdropbox(request):
 	except dropbox.rest.ErrorResponse, e:
 		print 'exception'
 		print e.error_msg
-	return HttpResponse("")
+	return HttpResponseRedirect('kineticjstest.html')
 
 def testjsp(request):
     return render_to_response('testjsp.jsp')
@@ -71,11 +71,6 @@ def getlist(request):
 	data=[]
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
-		#print client.account_info()
-		#s=render_to_string('test.gb')
-		#upload=StringIO.StringIO(s)
-		#response=client.put_file('/test.gb',upload)
-		#print "uploaded: ", response
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
 			data.append([obj['path'],obj['size']])
@@ -85,14 +80,14 @@ def getlist(request):
 
 
 def kineticjstest(request):
-	flow=get_dropbox_auth_flow(request.session)
-	request.session['dropbox-auth-csrf-token']='blah'
-	print request.session.keys()
-	authorize_url=flow.start()
-	templatedict={}
-	templatedict['dropboxurl']=authorize_url
-#	return render(request, 'kineticjstest.html', templatedict)
-	return render_to_response('kineticjstest.html', {'dropboxurl': authorize_url}, RequestContext(request))
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		folder_metadata=client.metadata('/')
+	except:
+		flow=get_dropbox_auth_flow(request.session)
+		return HttpResponseRedirect(flow.start())
+	return render(request, 'kineticjstest.html')
+#	return render_to_response('kineticjstest.html', RequestContext(request))
 
 def getsequence(request):
 	absolute_path=request.POST['name']
@@ -107,4 +102,5 @@ def getsequence(request):
 	output=StringIO.StringIO()
 	SeqIO.write(seq, output, "json")
 	jsonstring=output.getvalue()
+	print jsonstring
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')

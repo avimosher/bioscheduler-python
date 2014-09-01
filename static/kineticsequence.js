@@ -2,7 +2,15 @@ function sequenceeditor(seq) {
   dna=seq.seq;
   features=seq.features;
 
-  var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
+  var html="<h3>"+seq.name+"</h3><div class='tab_container' id='"+seq.name+"_container'><p id='"+seq.name+"_tm'>Tm: </p><br><div class='contain_canvas' id='"+seq.name+"'/></div>";
+  $("#accordion").accordion('destroy');
+  $("#accordion").append(html);
+  $("#accordion").accordion({
+      heightStyle: "fill",
+      collapsible: true
+    });
+  //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
+  var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
   var firstLayer=new Kinetic.Layer();
   //stage.add(firstLayer);
   var fontSize=10;
@@ -20,7 +28,7 @@ function sequenceeditor(seq) {
 
   var leftMargin=20;
   var rightMargin=20;
-  var lineSeparation=20;
+  var lineSeparation=1.5*fontSize;
   $(window).resize(function(e) {initializeDisplay();});
 
   var lineStructure={};
@@ -29,12 +37,11 @@ function sequenceeditor(seq) {
   var cursor=new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 1, fill: 'black'});
 
   function initializeDisplay() {
-    stage.setWidth($("#contain_canvas").width());
+    stage.setWidth($("#"+seq.name).width());
     var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
     lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
 
     lineStructure.lines=Math.ceil(dna.length/lineStructure.charactersPerLine);
-    stage.setHeight(lineStructure.lines*(lineSeparation+fontSize)+fontSize);
 
     //canvas.clear();
     var runningTop=lineSeparation;
@@ -80,6 +87,7 @@ function sequenceeditor(seq) {
       for(line=firstLine;line<=lastLine;line++) {lineStructure.lineList[line].features.push(feature);}
     }
 
+    var runningHeight=0;
     // figure out feature display
     for(i=0;i<lineStructure.lines;i++){
       var line=lineStructure.lineList[i];
@@ -128,7 +136,8 @@ function sequenceeditor(seq) {
         }
 
       }
-      line.totalHeight=groupHeight(line);
+      line.totalHeight=groupHeight(line)+lineSeparation;
+      runningHeight+=line.totalHeight;
       if(i>0){
         var previousLine=lineStructure.lineList[i-1];
         var position=line.position();
@@ -137,6 +146,7 @@ function sequenceeditor(seq) {
         line.position(position);
       }
     }
+    stage.setHeight(runningHeight+lineSeparation);
     updateSelection();
   }
 
@@ -146,14 +156,22 @@ function sequenceeditor(seq) {
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
-    return new Kinetic.Rect({x: fontWidth*start, y: 2+fontSize*(1+lineFeature.displayIndex), width: width*fontWidth, height: fontSize, fill: 'grey', stroke: 'black'});
+    console.log(feature);
+    var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex)});
+    featureGroup.add(new Kinetic.Rect({x: 0, y: 0, width: width*fontWidth, height: fontSize+2, fill: 'cornsilk', stroke: 'black'}));
+    featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: 0, y: 2, width: width*fontWidth, fontSize: fontSize,
+      fontFamily: 'Times New Roman', fill: 'black', align: 'center'}));
+    return featureGroup;
   }
 
   function groupHeight(group) {
+    if (group.getChildren === 'undefined'){
+      return group.getHeight();
+    }
     var children=group.getChildren();
     var height=0;
-    for(var i=0;i<children.length;i++){
-      height=Math.max(height,children[i].position().y+children[i].getHeight());
+    for(var gi=0;gi<children.length;gi++){
+      height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
     }
     return height;
   }
@@ -185,18 +203,27 @@ function sequenceeditor(seq) {
     cursorGroup.add(cursor);
     cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 2});
     firstLayer.draw();
+    var currentSelection=dna.substring(selection.start,selection.end);
+    var displayText="";
+    $("#"+seq.name+"_tm").css({fontSize: fontSize});
+    if (currentSelection.length>8) {
+      displayText="Tm: "+meltingTemperature(currentSelection);
+    }
+    else {
+      displayText="Tm:";
+    }
+    displayText+=" Length: "+currentSelection.length;
+    $("#"+seq.name+"_tm").text(displayText);
   }
-
 
   stage.add(firstLayer);
   initializeDisplay();
-
 
   setInterval(function(){
     cursor.setWidth(1-cursor.getWidth());
     firstLayer.draw();
   },600);
-  var canvasElement=$('#contain_canvas')[0];
+  var canvasElement=$("#"+seq.name+"_container")[0];
   canvasElement.tabIndex=1000;
   canvasElement.addEventListener("keydown",doKeyDown,false);
 
@@ -220,4 +247,21 @@ function sequenceeditor(seq) {
   }
 
   firstLayer.draw();
+  $("#accordion").accordion("option","active",-1);
+
+  function meltingTemperature(seq) {
+    var salt=50;
+    var ct=500/1000.0; // concentration in uM
+    var dmso=0;
+    var meth=1;
+    tmc = NEB.createTmCalc({
+      seq: seq,
+      ct: ct,
+      salt: salt,
+      method: meth,
+      dmso: dmso
+    });
+    t1 = Math.round(tmc.Tm().tm * 10) / 10;
+    return t1;
+  }
 }

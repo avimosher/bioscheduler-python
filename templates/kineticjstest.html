@@ -2,16 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>jQuery UI Draggable - Default functionality</title>
+  <title>Bioscheduler</title>
   {% load staticfiles %}
   <link rel="stylesheet" type="text/css" href="{% static "datatables/css/jquery.dataTables.css" %}">
   <link rel="stylesheet" href="{% static "jquery-ui/jquery-ui.css" %}">
+  <script src="{% static "tmcalc-support.js" %}"></script>
   <script src="{% static "kinetic.js" %}"></script>
   <script src="{% static "kineticsequence.js" %}"></script>
   <script src="{% static "jquery.min.js" %}"></script>
   <script src="{% static "datatables/js/jquery.dataTables.js" %}"></script>
   <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
-  <!--  <link rel="stylesheet" href="/resources/demos/style.css"> -->
+  <link rel="stylesheet" href="{% static "evidencegraph.css" %}">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="{% static "evidencegraph.js" %}"></script>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -23,15 +26,15 @@
     overflow-x: hidden;
     padding: 1em;
   }
-  #contain_canvas {
+  .tab_container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+  .contain_canvas {
       width: 95%;
       height: 95%;
       position: relative;
-  }
-  #c{
-    width: 100;
-    height: 100;
-    border: 0px solid black;
   }
   #outer
   {
@@ -41,8 +44,8 @@
   {
     position: relative;
     float: left;
-    width: 45vw;
-    height: 80vh;
+    width: 30vw;
+    height: 90vh;
     background-color: #FFD8D8;
     overflow-x: auto;
   }
@@ -50,8 +53,8 @@
   {
     position: relative;
     float: left;
-    width: 45vw;
-    height: 80vh;
+    width: 70vw;
+    height: 90vh;
     background-color: #D8D8FF;
     overflow: auto;
     overflow-x: hidden;
@@ -90,7 +93,6 @@
           xhr.setRequestHeader("X-CSRFToken", csrftoken);
         },
         success: function(seq) {
-          alert(seq);
           sequenceeditor(seq);
         },
         error: function(XMLHttpRequest,textStatus,errorThrown) {
@@ -127,7 +129,6 @@
       }
     });
 
-
     $('#dropboxform').submit(function(e) {
       var formURL=$(this).attr("action");
       $.ajax({
@@ -158,29 +159,15 @@
  
 <div id="outer">
   <div id="header" style="background-color:#FFA500;">
-    <h1 style="margin-bottom:0;">Main Title of Web Page</h1>
+    <h1 style="margin-bottom:0;">Bioscheduler <img src="{% static "icons/graph_32x32.png" %}" onclick="evidenceGraph();" /></h1>
   </div>
 
   <div id="leftDiv">
-    <form name="dropboxform" id="dropboxform" action="registerdropbox" method="POST">
-      {% csrf_token %}
-      Dropbox key: <input type="text" name="dropboxkey" id="dropboxkey" />
-    </form>
-    <b>{{ dropboxurl }}</b>
-    <b>Menu</b><br>
     <div id="demo"></div>
-    HTML<br>
-    CSS<br>
-    JavaScript
   </div>
 
   <div id="rightDiv">
     <div id="accordion">
-      <h3>Section 1</h3>
-      <div id="contain_canvas">
-      </div>
-      <h3>Section 2</h3>
-      <b>stuff</b>
     </div>
   </div>
 </div>

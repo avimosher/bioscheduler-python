@@ -31,8 +31,11 @@ class SeqToJSON(SequentialSequenceWriter):
                 location = dict((attr, getattr(location,attr)) for attr in attrs \
                         if hasattr( location, attr ))
                 _feature.update( { 'location' : location } )
+            #if hasattr( feature, 'type' ):
+            #    typeName = feature.type
+            #    attrs = ('type')
             for feat in self.features:
-                if hasattr( features, feat ):
+                if hasattr( feature, feat ):
                     _feature.update( { feat : getattr(feature,feat) } )
             # recursively update subfeatures.
             if hasattr( feature, 'subfeatures' ):
