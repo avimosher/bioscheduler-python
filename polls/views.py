@@ -6,7 +6,7 @@ import json
 import sys
 import io
 from Bio import SeqIO
-import SeqToJSON
+import polls.SeqToJSON
 import dropbox
 from dropbox.client import DropboxOAuth2Flow
 
@@ -68,7 +68,8 @@ def simpletest(request):
 def get_dropbox_auth_flow(session):
 	app_key='p7b7j5v29v38bnk'
 	app_secret='q83heifozbsktdy'
-	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://avimosher.webfactional.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://avimosher.webfactional.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 
 def getlist(request):
 	data=[]
@@ -119,4 +120,4 @@ def getsequence(request):
 	jsonstring=output.getvalue()
 	print("printing json string",file=sys.stderr)
 	print(jsonstring,file=sys.stderr)
-	return HttpResponse(jsonstring[1:-1], content_type='application/json')
+	return HttpResponse(jsonstring[2:-2], content_type='application/json')

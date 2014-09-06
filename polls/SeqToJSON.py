@@ -5,6 +5,7 @@ from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqIO.Interfaces import SequentialSequenceWriter
 import json
+import sys
 
 def SeqFromJSON(handle, alphabet = single_letter_alphabet, title2ids=None ):
     jsonObj = json.loads( handle.read() )
@@ -43,7 +44,7 @@ class SeqToJSON(SequentialSequenceWriter):
                             getattr(feature, 'subfeatures' ) ) )
             return _feature
 
-        return map( _convert_feature, features )
+        return list(map( _convert_feature, features ))
     def write_header(self):
         self.handle.write('[')
         self._header_written = True
@@ -72,9 +73,9 @@ class SeqToJSON(SequentialSequenceWriter):
     def write_records(self, records):
         self.write_header()
         write_record = self.write_record
-        map( write_record, records )
+        list(map(write_record, records ))
         self.write_footer()
-        return len(records)
+        return len(list(records))
 
 SeqIO._FormatToIterator.update(   {'json': SeqFromJSON})
 AlignIO._FormatToIterator.update( {'json': SeqFromJSON})
@@ -145,4 +146,4 @@ if __name__ == '__main__':
     seq_handle = testwrite()
     #print seq_handle.read()
     seqrecords = testread()
-    print seqrecords
+    print(seqrecords)
