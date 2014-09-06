@@ -17,7 +17,7 @@ TEMPLATE_DIRS = (
 )
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-STATIC_ROOT = ''
+STATIC_ROOT = '/home/avimosher/webapps/bioscheduler_static/'
 STATIC_URL = '/media/'
 
 STATICFILES_DIRS = (
@@ -36,11 +36,13 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SESSION_SERIALIZER = 'django.contrib.sessions.serializers.PickleSerializer'
 
 # Application definition
 
 INSTALLED_APPS = (
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -62,14 +64,17 @@ ROOT_URLCONF = 'mysite.urls'
 
 WSGI_APPLICATION = 'mysite.wsgi.application'
 
+ADMINS = (('Avi Robinson-Mosher', 'avi.mosher@gmail.com'))    
 
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'bioscheduler',
+        'USER': 'avimosher',
+        'PASSWORD': 'WTFdon\'tshowthat'
     }
 }
 
