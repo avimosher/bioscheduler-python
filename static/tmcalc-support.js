@@ -22,7 +22,6 @@ NEB.revcomp = function (nucseq) {
 };
 NEB.createTmCalc = function (spec) {
     var that = this;
-    alert(spec.seq);
     if (!spec.seq) {
         throw {
             name: 'Missing seq',

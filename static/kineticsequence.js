@@ -10,6 +10,7 @@ function sequenceeditor(seq) {
       collapsible: true
     });
   //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
+  var containCanvas=$("#"+seq.name);
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
   var firstLayer=new Kinetic.Layer();
   //stage.add(firstLayer);
@@ -52,6 +53,7 @@ function sequenceeditor(seq) {
       var subtext=dna.substring(start,end);
       var text=new Kinetic.Text({text: subtext, x: 0, top: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'black'});
       var groupSelection = new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+
       var group=new Kinetic.Group({x: leftMargin, y: runningTop});
       group.start=start;
       group.end=end;
@@ -60,23 +62,6 @@ function sequenceeditor(seq) {
       group.add(groupSelection);
       group.add(text);
 
-      group.on("mousedown", function(options) {
-        selecting=true;
-        selection.end=getBase(options.evt.offsetX,this);
-        if(!options.evt.shiftKey) {selection.start=selection.end;}
-        updateSelection();
-      });
-      group.on("mousemove", function(options) {
-        if (selecting) {
-          selection.end=getBase(options.evt.offsetX,this);
-          updateSelection();
-        }
-      });
-      group.on("mouseup", function() {
-        selecting=false;
-      });
-
-      firstLayer.add(group);
       lineStructure.lineList[i]=group;
       runningTop+=lineSeparation+fontSize;
     }
@@ -138,6 +123,10 @@ function sequenceeditor(seq) {
       }
       line.totalHeight=groupHeight(line)+lineSeparation;
       runningHeight+=line.totalHeight;
+      var backgroundRect=new Kinetic.Rect({x: 0, y: 0, width: groupWidth(line), height: line.totalHeight, opacity: .1, fill: 'grey'});
+      line.add(backgroundRect);
+      backgroundRect.moveToBottom();
+
       if(i>0){
         var previousLine=lineStructure.lineList[i-1];
         var position=line.position();
@@ -145,6 +134,33 @@ function sequenceeditor(seq) {
         position.y=previousPosition.y+previousLine.totalHeight;
         line.position(position);
       }
+    }
+    for(i=0;i<lineStructure.lines;i++){
+      var group=lineStructure.lineList[i];
+      group.index=i;
+      group.on("mousedown", function(options) {
+        selecting=true;
+        selection.end=getBase(options.evt.offsetX,this);
+        if(!options.evt.shiftKey) {selection.start=selection.end;}
+        updateSelection();
+      });
+      group.on("selectmove", function(options) {
+        if (selecting) {
+          selection.end=getBase(options.evt.offsetX,this);
+          updateSelection();
+        }
+      });
+      group.on("mousemove", function(options) {
+        if (selecting) {
+          selection.end=getBase(options.evt.offsetX,this);
+          updateSelection();
+        }
+      });
+      group.on("mouseup", function() {
+        selecting=false;
+      });
+      firstLayer.add(group);
+      group.moveToTop();
     }
     stage.setHeight(runningHeight+lineSeparation);
     updateSelection();
@@ -156,7 +172,6 @@ function sequenceeditor(seq) {
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
-    console.log(feature);
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex)});
     featureGroup.add(new Kinetic.Rect({x: 0, y: 0, width: width*fontWidth, height: fontSize+2, fill: 'cornsilk', stroke: 'black'}));
     featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: 0, y: 2, width: width*fontWidth, fontSize: fontSize,
@@ -174,6 +189,17 @@ function sequenceeditor(seq) {
       height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
     }
     return height;
+  }
+  function groupWidth(group) {
+    if (group.getChildren === 'undefined'){
+      return group.getWidth();
+    }
+    var children=group.getChildren();
+    var width=0;
+    for(var gi=0;gi<children.length;gi++){
+      width=Math.max(width,children[gi].position().x+children[gi].getWidth());
+    }
+    return width;
   }
 
   function lineAtBase(base) {return Math.floor(base/lineStructure.charactersPerLine);}
@@ -198,6 +224,7 @@ function sequenceeditor(seq) {
       var lineRight=Math.min(group.end-group.start,sortedEnd-group.start);
       groupSelection.position({x: lineLeft*fontWidth,y: 2});
       groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
+      groupSelection.setHeight(group.totalHeight);
     }
     var cursorGroup=groupAtBase(selection.end);
     cursorGroup.add(cursor);
@@ -248,6 +275,51 @@ function sequenceeditor(seq) {
 
   firstLayer.draw();
   $("#accordion").accordion("option","active",-1);
+
+  var mousePos;
+  var container=$("#"+seq.name+"_container");
+  var mousePosHandler=function(event) {
+    mousePos = {x: event.clientX, y: event.clientY};
+  };
+
+  var mouseScrollTimer;
+  $(window).mouseup(function() {
+    selecting=false;
+    clearInterval(mouseScrollTimer);
+    $(window).unbind("mousemove", mousePosHandler);
+    console.log("unbound");
+  });
+
+  $("#"+seq.name).mouseleave(function(event) {
+    if(selecting){
+      $(window).bind("mousemove", mousePosHandler);
+      mouseScrollTimer=setInterval(function(){
+        var top=container.position().top;
+        var bottom=top+container.outerHeight(true);
+        var eventX=mousePos.x;
+        var eventY=Math.max(top+10,Math.min(bottom-10,mousePos.y));
+        var offsetX=eventX-containCanvas.position().left;
+        var offsetY=eventY-containCanvas.position().top;//+container.scrollTop();
+        var clickEvent={'evt': {
+            'clientX': eventX,
+            'clientY': eventY,
+            'offsetX': eventX,
+            'offsetY': eventY
+          }
+        };
+        console.log("top: "+top+" bottom: "+bottom+" eventX: "+eventX+" eventY: "+eventY+" offsetX: "+offsetX+" offsetY: "+offsetY+" mousePos.y: "+mousePos.y);
+        if(mousePos.y>bottom){
+          container.scrollTop(10+container.scrollTop()); 
+          firstLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
+        }
+        if(mousePos.y<top){
+          container.scrollTop(-10+container.scrollTop()); 
+          firstLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
+        }
+        //firstLayer.draw();
+      },100);
+    }
+  });
 
   function meltingTemperature(seq) {
     var salt=50;
