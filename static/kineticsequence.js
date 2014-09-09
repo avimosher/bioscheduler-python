@@ -23,7 +23,6 @@ function sequenceeditor(seq) {
       if (row[2]) {
         var foundIndex=dna.indexOf(row[2]);
         if (foundIndex>-1) {
-          console.log(row[2]);
           var feature={};
           feature.location={};
           feature.location.start=foundIndex;
@@ -314,7 +313,6 @@ function sequenceeditor(seq) {
     selecting=false;
     clearInterval(mouseScrollTimer);
     $(window).unbind("mousemove", mousePosHandler);
-    console.log("unbound");
   });
 
   $("#"+seq.name).mouseleave(function(event) {
@@ -334,7 +332,6 @@ function sequenceeditor(seq) {
             'offsetY': eventY
           }
         };
-        console.log("top: "+top+" bottom: "+bottom+" eventX: "+eventX+" eventY: "+eventY+" offsetX: "+offsetX+" offsetY: "+offsetY+" mousePos.y: "+mousePos.y);
         if(mousePos.y>bottom){
           container.scrollTop(10+container.scrollTop()); 
           firstLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
