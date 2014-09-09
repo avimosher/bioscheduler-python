@@ -18,20 +18,27 @@ function sequenceeditor(seq) {
   var fontFamily='monospace';
   var firstLayer=new Kinetic.Layer();
 
+  function addFeature(foundIndex, row, strand) {
+    if (foundIndex==-1) {return;}
+    var feature={};
+    feature.location={};
+    feature.location.start=foundIndex;
+    feature.location.end=foundIndex+row[2].length;
+    feature.location.strand=strand;
+    feature.featureFill='lime';
+    feature.qualifiers={};
+    feature.qualifiers.label=[row[0]];
+    features.push(feature);
+  }
+
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
       if (row[2]) {
         var foundIndex=dna.indexOf(row[2]);
-        if (foundIndex>-1) {
-          var feature={};
-          feature.location={};
-          feature.location.start=foundIndex;
-          feature.location.end=foundIndex+row[2].length;
-          feature.featureFill='lime';
-          feature.qualifiers={};
-          feature.qualifiers.label=[row[0]];
-          features.push(feature);
-        }
+        addFeature(foundIndex,row,-1);
+        var reverseComplement=reverse(complement(getSequenceFromFasta(row[2])));
+        var reverseFoundIndex=dna.indexOf(reverseComplement);
+        addFeature(reverseFoundIndex,row,1);
       }
     });
     initializeDisplay();
@@ -195,13 +202,34 @@ function sequenceeditor(seq) {
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
+    var endCapWidth=10;
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex)});
     var featureFill='cornsilk';
     if (feature.featureFill) {
       featureFill=feature.featureFill;
     }
-    featureGroup.add(new Kinetic.Rect({x: 0, y: 0, width: width*fontWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
-    featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: 0, y: 2, width: width*fontWidth, fontSize: fontSize,
+    var leftCapOffset=0;
+    var endCapTipX=width*fontWidth;
+    var endCapBaseX=endCapTipX-endCapWidth;
+    if (feature.location.strand==-1) {
+      leftCapOffset=endCapWidth;
+      endCapBaseX=endCapWidth;
+      endCapTipX=0;
+    }
+    featureGroup.add(new Kinetic.Rect({x: leftCapOffset, y: 0, width: width*fontWidth-endCapWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
+    featureGroup.add(new Kinetic.Shape({
+      sceneFunc: function(context) {
+        context.beginPath();
+        context.moveTo(endCapTipX, fontSize/2+1);
+        context.lineTo(endCapBaseX,0);
+        context.lineTo(endCapBaseX,fontSize+2);
+        context.closePath();
+        context.fillStrokeShape(this);
+      },
+      fill: 'black',
+      stroke: 'black'
+    }));
+    featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'}));
     return featureGroup;
   }
