@@ -211,24 +211,34 @@ function sequenceeditor(seq) {
     var leftCapOffset=0;
     var endCapTipX=width*fontWidth;
     var endCapBaseX=endCapTipX-endCapWidth;
+    var featureEndX=0;
     if (feature.location.strand==-1) {
       leftCapOffset=endCapWidth;
       endCapBaseX=endCapWidth;
       endCapTipX=0;
+      featureEndX=width*fontWidth;
     }
-    featureGroup.add(new Kinetic.Rect({x: leftCapOffset, y: 0, width: width*fontWidth-endCapWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
-    featureGroup.add(new Kinetic.Shape({
+    //featureGroup.add(new Kinetic.Rect({x: leftCapOffset, y: 0, width: width*fontWidth-endCapWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
+    var shape=new Kinetic.Shape({
       sceneFunc: function(context) {
         context.beginPath();
         context.moveTo(endCapTipX, fontSize/2+1);
         context.lineTo(endCapBaseX,0);
+        context.lineTo(featureEndX,0);
+        context.lineTo(featureEndX,fontSize+2);
         context.lineTo(endCapBaseX,fontSize+2);
         context.closePath();
         context.fillStrokeShape(this);
       },
-      fill: 'black',
-      stroke: 'black'
-    }));
+      fill: featureFill,
+      stroke: 'black',
+      shadowColor: 'black',
+      shadowBlur: 2,
+      shadowOffset: {x: 2, y:2},
+      shadowOpacity: .5
+    });
+    shape._useBufferCanvas=function() {return false;};//fix for slow shadow handling in Chrome
+    featureGroup.add(shape);
     featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'}));
     return featureGroup;
