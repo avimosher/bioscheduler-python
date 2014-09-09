@@ -9,13 +9,34 @@ function sequenceeditor(seq) {
       heightStyle: "fill",
       collapsible: true
     });
+
   //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
   var containCanvas=$("#"+seq.name);
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
-  var firstLayer=new Kinetic.Layer();
   //stage.add(firstLayer);
   var fontSize=10;
   var fontFamily='monospace';
+  var firstLayer=new Kinetic.Layer();
+
+  containCanvas.on("mapoligos", function() {
+    $.each($("#example").dataTable().fnGetData(), function(i, row) {
+      if (row[2]) {
+        var foundIndex=dna.indexOf(row[2]);
+        if (foundIndex>-1) {
+          console.log(row[2]);
+          var feature={};
+          feature.location={};
+          feature.location.start=foundIndex;
+          feature.location.end=foundIndex+row[2].length;
+          feature.featureFill='lime';
+          feature.qualifiers={};
+          feature.qualifiers.label=[row[0]];
+          features.push(feature);
+        }
+      }
+    });
+    initializeDisplay();
+  });
 
   function computeFontWidth(fontSize, fontFamily) {
     var testString="AGCT";
@@ -38,6 +59,8 @@ function sequenceeditor(seq) {
   var cursor=new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 1, fill: 'black'});
 
   function initializeDisplay() {
+    firstLayer.destroy();
+    firstLayer=new Kinetic.Layer();
     stage.setWidth($("#"+seq.name).width());
     var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
     lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
@@ -163,6 +186,7 @@ function sequenceeditor(seq) {
       group.moveToTop();
     }
     stage.setHeight(runningHeight+lineSeparation);
+    stage.add(firstLayer);
     updateSelection();
   }
 
@@ -173,7 +197,11 @@ function sequenceeditor(seq) {
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex)});
-    featureGroup.add(new Kinetic.Rect({x: 0, y: 0, width: width*fontWidth, height: fontSize+2, fill: 'cornsilk', stroke: 'black'}));
+    var featureFill='cornsilk';
+    if (feature.featureFill) {
+      featureFill=feature.featureFill;
+    }
+    featureGroup.add(new Kinetic.Rect({x: 0, y: 0, width: width*fontWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
     featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: 0, y: 2, width: width*fontWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'}));
     return featureGroup;
@@ -243,7 +271,6 @@ function sequenceeditor(seq) {
     $("#"+seq.name+"_tm").text(displayText);
   }
 
-  stage.add(firstLayer);
   initializeDisplay();
 
   setInterval(function(){

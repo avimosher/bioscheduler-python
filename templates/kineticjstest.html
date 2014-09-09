@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="{% static "evidencegraph.css" %}">
   <script src="{% static "d3.v3.min.js" %}"></script>
   <script src="{% static "evidencegraph.js" %}"></script>
+  <script src="{% static "contextMenu/jquery.ui.position.js" %}"></script>
+  <script src="{% static "contextMenu/jquery.contextMenu.js" %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static "contextMenu/jquery.contextMenu.css" %}"/>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -119,7 +122,11 @@
           "data" : seqList,
           "columns": [
           { "title": "Name"},
-          { "title": "Length", "class": "center"}]
+          { "title": "Length", "class": "center"},
+          { "title": "Sequence"}],
+          "columnDefs": [
+          { "targets": [2], "visible": false}
+          ]
         });
         $('#example tbody').on('dblclick', 'tr', function() {
           var name=$('td',this).eq(0).text(); // this is how the datatables demo does it, sadly
@@ -129,8 +136,9 @@
           //containment: "#outer",
           helper: function(event) {
             var _this=$(this);
+            var name=$('td',this).eq(0).text();
             var new_ele=$('<li></li>')
-              .append('<span>stuff</span>');
+              .append('<span>'+name+'</span>');
             return new_ele.clone();
           },
           appendTo: 'body'
@@ -159,6 +167,24 @@
       heightStyle: "fill",
       collapsible: true
     });
+
+
+    $.contextMenu({
+      selector: ".contain_canvas",
+      callback: function(key, options) {
+        var m="clicked: "+key;
+        options.$trigger.trigger("mapoligos");
+      },
+      items: {
+        "edit": {name: "Edit", icon: "edit"},
+        "cut": {name: "Cut", icon: "cut"},
+        "copy": {name: "Copy", icon: "copy"},
+        "paste": {name: "Paste", icon: "paste"},
+        "delete": {name: "Delete", icon: "delete"},
+        "sep1": "---------",
+        "quit": {name: "Quit", icon: "quit"}
+      }
+    });
   });
 
 
@@ -168,7 +194,7 @@
  
 <div id="outer">
   <div id="header" style="background-color:#FFA500;">
-    <h1 style="margin-bottom:0;">Bioscheduler <img src="{% static "icons/graph_32x32.png" %}" onclick="evidenceGraph();" /></h1>
+    <h1 style="margin-bottom:0;">Bioscheduler <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="evidenceGraph();" /></h1>
   </div>
 
   <div id="leftDiv">

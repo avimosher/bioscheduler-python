@@ -9,6 +9,7 @@ from Bio import SeqIO
 import polls.SeqToJSON
 import dropbox
 from dropbox.client import DropboxOAuth2Flow
+from xlrd import open_workbook
 
 # Create your views here.
 
@@ -77,22 +78,40 @@ def getlist(request):
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
-			data.append([obj['path'],obj['size']])
+			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+				absolute_path=obj['path']
+				f=client.get_file(absolute_path)
+				s=f.read()
+				book=open_workbook(file_contents=s)
+				for name in book.sheet_names():
+					sheet=book.sheet_by_name(name)
+					rows=sheet.nrows
+					current_row=2
+					while current_row<rows:
+						row=sheet.row(current_row)
+						name_column=1
+						text_entry=1
+						if sheet.cell_type(current_row,name_column)!=text_entry:
+							break
+						name=sheet.cell_value(current_row,name_column)
+						sequence_column=4
+						sequence=sheet.cell_value(current_row,sequence_column)
+						data.append([name,len(sequence),sequence])
+						current_row+=1
+			else:
+				data.append([obj['path'],obj['size'],''])
 	except:
 		request.session['test']=0
 	return HttpResponse(json.dumps(data),content_type='application/json')
 
 
 def kineticjstest(request):
-	print("WARNING: test",file=sys.stderr)
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		folder_metadata=client.metadata('/')
 	except:
-		print("TRYING DROPBOX",file=sys.stderr)
 		flow=get_dropbox_auth_flow(request.session)
 		return HttpResponseRedirect(flow.start())
-	print("TRYING PLAIN",file=sys.stderr)
 	return render(request, 'kineticjstest.html')
 #	return render_to_response('kineticjstest.html', RequestContext(request))
 
@@ -114,10 +133,10 @@ def getsequence(request):
 		#SeqIO.convert(io.StringIO(s.decode("utf-8")), "genbank",output,"json")
 	except Exception as e:
 		print(str(e),file=sys.stderr)
+		raise e
 
-	print(seq,file=sys.stderr)
 	SeqIO.write(seq, output, "json")
 	jsonstring=output.getvalue()
 	print("printing json string",file=sys.stderr)
-	print(jsonstring,file=sys.stderr)
+	# note: the
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')
