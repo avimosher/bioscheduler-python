@@ -203,7 +203,7 @@ function sequenceeditor(seq) {
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
     var endCapWidth=10;
-    var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex)});
+    var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex), feature: feature});
     var featureFill='cornsilk';
     if (feature.featureFill) {
       featureFill=feature.featureFill;
@@ -218,7 +218,6 @@ function sequenceeditor(seq) {
       endCapTipX=0;
       featureEndX=width*fontWidth;
     }
-    //featureGroup.add(new Kinetic.Rect({x: leftCapOffset, y: 0, width: width*fontWidth-endCapWidth, height: fontSize+2, fill: featureFill, stroke: 'black'}));
     var shape=new Kinetic.Shape({
       sceneFunc: function(context) {
         context.beginPath();
@@ -237,10 +236,18 @@ function sequenceeditor(seq) {
       shadowOffset: {x: 2, y:2},
       shadowOpacity: .5
     });
-    shape._useBufferCanvas=function() {return false;};//fix for slow shadow handling in Chrome
+    shape._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
     featureGroup.add(shape);
-    featureGroup.add(new Kinetic.Text({text: feature.qualifiers.label[0], x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
-      fontFamily: 'Times New Roman', fill: 'black', align: 'center'}));
+    var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
+    var text=new Kinetic.Text({text: feature.qualifiers.label[0], x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
+      fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
+    textGroup.add(text);
+    featureGroup.add(textGroup);
+    featureGroup.on('click', function(evt) {
+      selection.start=feature.location.start;
+      selection.end=feature.location.end;
+      updateSelection();
+    });
     return featureGroup;
   }
 
