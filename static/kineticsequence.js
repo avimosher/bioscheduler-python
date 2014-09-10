@@ -34,9 +34,13 @@ function sequenceeditor(seq) {
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
       if (row[2]) {
-        var foundIndex=dna.indexOf(row[2]);
+        var complementarySequence=row[2];
+        if(row[4]) {
+          complementarySequence=row[4];
+        }
+        var foundIndex=dna.indexOf(complementarySequence);
         addFeature(foundIndex,row,-1);
-        var reverseComplement=reverse(complement(getSequenceFromFasta(row[2])));
+        var reverseComplement=reverse(complement(getSequenceFromFasta(complementarySequence)));
         var reverseFoundIndex=dna.indexOf(reverseComplement);
         addFeature(reverseFoundIndex,row,1);
       }
@@ -196,6 +200,19 @@ function sequenceeditor(seq) {
     updateSelection();
   }
 
+  function getLabel(feature) {
+    if (feature.qualifiers.label) {
+      return feature.qualifiers.label[0];
+    }
+    var keys=Object.keys(feature.qualifiers);
+    for (key in keys) {
+      if (feature.qualifiers[key]) {
+        return feature.qualifiers[key][0];
+      }
+    }
+    return "";
+  }
+
   function drawFeature(rangeEvent,line) {
     var lineFeature=rangeEvent.lineFeature;
     var feature=rangeEvent.feature;
@@ -239,7 +256,7 @@ function sequenceeditor(seq) {
     shape._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
     featureGroup.add(shape);
     var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
-    var text=new Kinetic.Text({text: feature.qualifiers.label[0], x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
+    var text=new Kinetic.Text({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
     textGroup.add(text);
     featureGroup.add(textGroup);

@@ -124,9 +124,13 @@
           "columns": [
           { "title": "Name"},
           { "title": "Length", "class": "center"},
-          { "title": "Sequence"}],
+          { "title": "Sequence"},
+          { "title": "Extension"},
+          { "title": "Complementary"}],
           "columnDefs": [
-          { "targets": [2], "visible": false}
+          { "targets": [2], "visible": false},
+          { "targets": [3], "visible": false},
+          { "targets": [4], "visible": false},
           ]
         });
         $('#example tbody').on('dblclick', 'tr', function() {

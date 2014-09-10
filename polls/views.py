@@ -79,6 +79,7 @@ def getlist(request):
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
 			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+				print('excel')
 				absolute_path=obj['path']
 				f=client.get_file(absolute_path)
 				s=f.read()
@@ -96,12 +97,18 @@ def getlist(request):
 						name=sheet.cell_value(current_row,name_column)
 						sequence_column=4
 						sequence=sheet.cell_value(current_row,sequence_column)
-						data.append([name,len(sequence),sequence])
+						extension_column=5
+						extension=sheet.cell_value(current_row,extension_column)
+						complementary_column=6
+						complementary=sheet.cell_value(current_row,complementary_column)
+						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper()])
 						current_row+=1
 			else:
-				data.append([obj['path'],obj['size'],''])
-	except:
-		request.session['test']=0
+				print('other')
+				data.append([obj['path'],obj['size'],'','',''])
+	except Exception as e:
+		print(str(e))
+		raise e
 	return HttpResponse(json.dumps(data),content_type='application/json')
 
 
