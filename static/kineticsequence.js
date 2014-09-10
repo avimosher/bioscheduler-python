@@ -12,6 +12,7 @@ function sequenceeditor(seq) {
 
   //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
   var containCanvas=$("#"+seq.name);
+  var outerContainer=$("#"+seq.name+"_tm");
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
   //stage.add(firstLayer);
   var fontSize=10;
@@ -30,6 +31,30 @@ function sequenceeditor(seq) {
     feature.qualifiers.label=[row[0]];
     features.push(feature);
   }
+
+  outerContainer.on('copy', function(evt) {
+    var copyData=dna.substring(selection.start,selection.end);
+    evt.originalEvent.clipboardData.setData("Text", copyData);
+    evt.preventDefault();
+  });
+
+  outerContainer.on('paste', function(evt) {
+    var pasteData=evt.originalEvent.clipboardData.getData("Text");
+    alert(pasteData);
+    evt.preventDefault();
+  });
+
+  /*window.addEventListener('paste', function(evt) {
+    var pasteData=evt.clipboardData.getData("Text");
+    alert(pasteData);
+    evt.preventDefault();
+  });*/
+  /*window.addEventListener('copy', function(evt) {
+    var copyData=dna.substring(selection.start,selection.end);
+    evt.clipboardData.setData("Text", copyData);
+    evt.preventDefault();
+  });*/
+
 
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
@@ -172,6 +197,13 @@ function sequenceeditor(seq) {
       var group=lineStructure.lineList[i];
       group.index=i;
       group.on("mousedown", function(options) {
+        // kind of ugly trick for selection.  Won't work in IE.
+        // http://stackoverflow.com/questions/985272/selecting-text-in-an-element-akin-to-highlighting-with-your-mouse
+        var s=window.getSelection();
+        r=document.createRange();
+        r.selectNodeContents(outerContainer[0]);
+        s.removeAllRanges();
+        s.addRange(r);
         selecting=true;
         selection.end=getBase(options.evt.offsetX,this);
         if(!options.evt.shiftKey) {selection.start=selection.end;}
