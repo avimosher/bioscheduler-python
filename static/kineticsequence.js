@@ -14,7 +14,6 @@ function sequenceeditor(seq) {
   var containCanvas=$("#"+seq.name);
   var outerContainer=$("#"+seq.name+"_tm");
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
-  //stage.add(firstLayer);
   var fontSize=10;
   var fontFamily='monospace';
   var firstLayer=new Kinetic.Layer();
@@ -44,18 +43,6 @@ function sequenceeditor(seq) {
     evt.preventDefault();
   });
 
-  /*window.addEventListener('paste', function(evt) {
-    var pasteData=evt.clipboardData.getData("Text");
-    alert(pasteData);
-    evt.preventDefault();
-  });*/
-  /*window.addEventListener('copy', function(evt) {
-    var copyData=dna.substring(selection.start,selection.end);
-    evt.clipboardData.setData("Text", copyData);
-    evt.preventDefault();
-  });*/
-
-
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
       if (row[2]) {
@@ -64,10 +51,10 @@ function sequenceeditor(seq) {
           complementarySequence=row[4];
         }
         var foundIndex=dna.indexOf(complementarySequence);
-        addFeature(foundIndex,row,-1);
+        addFeature(foundIndex,row,1);
         var reverseComplement=reverse(complement(getSequenceFromFasta(complementarySequence)));
         var reverseFoundIndex=dna.indexOf(reverseComplement);
-        addFeature(reverseFoundIndex,row,1);
+        addFeature(reverseFoundIndex,row,-1);
       }
     });
     initializeDisplay();

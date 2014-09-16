@@ -6,19 +6,26 @@
   {% load staticfiles %}
   <link rel="stylesheet" type="text/css" href="{% static "datatables/css/jquery.dataTables.css" %}">
   <link rel="stylesheet" href="{% static "jquery-ui/jquery-ui.css" %}">
+  <script type="text/javascript">
+    var staticPath="{% static "" %}";
+  </script>
   <script src="{% static "tmcalc-support.js" %}"></script>
   <script src="{% static "kinetic.js" %}"></script>
   <script src="{% static "kineticsequence.js" %}"></script>
   <script src="{% static "jquery.min.js" %}"></script>
   <script src="{% static "datatables/js/jquery.dataTables.js" %}"></script>
   <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
+  <!--
   <link rel="stylesheet" href="{% static "evidencegraph.css" %}">
   <script src="{% static "d3.v3.min.js" %}"></script>
-  <script src="{% static "evidencegraph.js" %}"></script>
+  <script src="{% static "evidencegraph.js" %}"></script>-->
   <script src="{% static "contextMenu/jquery.ui.position.js" %}"></script>
   <script src="{% static "contextMenu/jquery.contextMenu.js" %}"></script>
   <link rel="stylesheet" type="text/css" href="{% static "contextMenu/jquery.contextMenu.css" %}"/>
   <script src="{% static "sms/sms_common.js" %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/demo.css" %}"/>
+  <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/jsplumb.css" %}"/>
+  <script src="{% static "jsPlumb/package-demo.js" %}"></script>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -63,7 +70,7 @@
     overflow-x: hidden;
   }
   </style>
-  <script id="main" class="init">
+  <script id="mainscript" class="init">
   $(document).ready(function() {
     function getCookie(name) {
         var cookieValue = null;
@@ -196,10 +203,9 @@
 </script>
 </head>
 <body>
- 
 <div id="outer">
-  <div id="header" style="background-color:#FFA500;">
-    <h1 style="margin-bottom:0;">Bioscheduler <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="evidenceGraph();" /></h1>
+  <div id="bioscheduler_header" style="background-color:#FFA500;">
+    <h1 style="margin-bottom:0;">Bioscheduler <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="jsPlumbDemo();" /></h1>
   </div>
 
   <div id="leftDiv">
@@ -211,6 +217,5 @@
     </div>
   </div>
 </div>
- 
 </body>
 </html>

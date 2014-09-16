@@ -122,6 +122,9 @@ def kineticjstest(request):
 	return render(request, 'kineticjstest.html')
 #	return render_to_response('kineticjstest.html', RequestContext(request))
 
+def testjsplumb(request):
+	return render(request, 'testjsplumb.html')
+
 def getsequence(request):
 	absolute_path=request.POST['name']
 	print("get sequence",file=sys.stderr)
