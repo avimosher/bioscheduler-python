@@ -138,7 +138,8 @@
           { "targets": [2], "visible": false},
           { "targets": [3], "visible": false},
           { "targets": [4], "visible": false},
-          ]
+          ],
+          "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}
         });
         $('#example tbody').on('dblclick', 'tr', function() {
           var name=$('td',this).eq(0).text(); // this is how the datatables demo does it, sadly
@@ -149,8 +150,7 @@
           helper: function(event) {
             var _this=$(this);
             var name=$('td',this).eq(0).text();
-            var new_ele=$('<li></li>')
-              .append('<span>'+name+'</span>');
+            var new_ele=$('<div class="inventoryItem">'+name+'</div>');
             return new_ele.clone();
           },
           appendTo: 'body'

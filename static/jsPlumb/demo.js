@@ -25,11 +25,13 @@ function jsPlumbDemo() {
 		  });
 
 		$("#"+name).droppable({
+			tolerance: 'pointer',
+			accept: ".inventoryItem",
 			drop: function(event, ui) {
+				console.log("stuff");
 				var $div=$("<div>", {id: 'testdrop', class: 'window'});
 				$div.css({top: event.clientY-$(this).offset().top, left: event.clientX-$(this).offset().left});
 				$(this).append($div);
-				console.log(event);
 				instance.draggable(jsPlumb.getSelector(".flowchart-demo .window"), { grid: [20, 20] });
 			}
 		});
