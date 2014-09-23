@@ -26,6 +26,7 @@
   <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/demo.css" %}"/>
   <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/jsplumb.css" %}"/>
   <script src="{% static "jsPlumb/package-demo.js" %}"></script>
+  <script src="{% static "molarityCalculator.js" %}"></script>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -175,11 +176,15 @@
       e.preventDefault();
     });
 
+    var icons={
+      header: "ui-icon-close"
+    };
+
     $('#accordion').accordion({
       heightStyle: "fill",
-      collapsible: true
+      collapsible: true,
+      icons: icons
     });
-
 
     $.contextMenu({
       selector: ".contain_canvas",
@@ -205,8 +210,13 @@
 <body>
 <div id="outer">
   <div id="bioscheduler_header" style="background-color:#FFA500;">
-    <h1 style="margin-bottom:0;">Bioscheduler <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="jsPlumbDemo();" /></h1>
+    <h1 style="margin-bottom:0;">
+      Bioscheduler
+      <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="jsPlumbDemo();" />
+      <img id="molarityCalculatorMenu" src="{% static "icons/education32.svg" %}" onclick="molarityCalculator();" />
+    </h1>
   </div>
+  <!--  <div>Icons made by Freepik from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>         is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div> -->
 
   <div id="leftDiv">
     <div id="demo"></div>

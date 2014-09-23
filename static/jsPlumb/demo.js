@@ -17,21 +17,24 @@ function jsPlumbDemo() {
 	                <div class=\"window\" id=\"flowchartWindow2\"><strong>2</strong><br/><br/></div>\
 	                <div class=\"window\" id=\"flowchartWindow3\"><strong>3</strong><br/><br/></div>\
 	                <div class=\"window\" id=\"flowchartWindow4\"><strong>4</strong><br/><br/></div></div></div>";
-		$("#accordion").accordion('destroy');
 		$("#accordion").append(html);
-		$("#accordion").accordion({
-		    heightStyle: "fill",
-		    collapsible: true
-		  });
+		$("#accordion").accordion("refresh");
+		$("#accordion").accordion("option","active",-1);
 
 		$("#"+name).droppable({
 			tolerance: 'pointer',
 			accept: ".inventoryItem",
 			drop: function(event, ui) {
-				console.log("stuff");
-				var $div=$("<div>", {id: 'testdrop', class: 'window'});
+				console.log(event);
+				console.log(ui);
+				var thisId='testdrop';
+				var $div=$("<div>", {id: thisId, class: 'window'});
+				$div.append($('<strong>'+thisId+'</strong>'));
 				$div.css({top: event.clientY-$(this).offset().top, left: event.clientX-$(this).offset().left});
 				$(this).append($div);
+				var sourceAnchor="RightMiddle";
+				var sourceUUID = thisId + sourceAnchor;
+				instance.addEndpoint(thisId, sourceEndpoint, { anchor:sourceAnchor, uuid:sourceUUID });
 				instance.draggable(jsPlumb.getSelector(".flowchart-demo .window"), { grid: [20, 20] });
 			}
 		});

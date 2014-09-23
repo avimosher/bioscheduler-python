@@ -2,13 +2,15 @@ function sequenceeditor(seq) {
   dna=seq.seq;
   features=seq.features;
 
-  var html="<h3>"+seq.name+"</h3><div class='tab_container' id='"+seq.name+"_container'><p id='"+seq.name+"_tm'>Tm: </p><br><div class='contain_canvas' id='"+seq.name+"'/></div>";
-  $("#accordion").accordion('destroy');
-  $("#accordion").append(html);
-  $("#accordion").accordion({
-      heightStyle: "fill",
-      collapsible: true
-    });
+  var $header=$('<h3/>',{text: seq.name});
+  var $div=$('<div/>',{class: 'tab_container', id: seq.name+"_container"});
+  $('<p/>',{id: seq.name+"_tm", text: "Tm: "}).appendTo($div);
+  $('<br>').appendTo($div);
+  $('<div/>',{class: 'contain_canvas',id: seq.name}).appendTo($div);
+  $("#accordion").append([$header,$div]);
+  $("#accordion").accordion('refresh');
+  $("#accordion").accordion("option","active",-1);
+
 
   //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
   var containCanvas=$("#"+seq.name);
@@ -381,7 +383,6 @@ function sequenceeditor(seq) {
   }
 
   firstLayer.draw();
-  $("#accordion").accordion("option","active",-1);
 
   var mousePos;
   var container=$("#"+seq.name+"_container");
