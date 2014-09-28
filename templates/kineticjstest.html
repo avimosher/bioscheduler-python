@@ -192,10 +192,12 @@
         console.log(key);
         console.log(options);
         var m="clicked: "+key;
-        //options.$trigger.trigger("mapoligos");
+        if (key=='edit') {
+          options.$trigger.trigger("mapoligos");
+        }
       },
       items: {
-        "edit": {name: "Edit", icon: "edit"},
+        "edit": {name: "Map Oligos", icon: "edit"},
         "cut": {name: "Cut", icon: "cut"},
         "copy": {name: "Copy", icon: "copy"},
         "paste": {name: "Paste", icon: "paste"},

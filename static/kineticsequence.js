@@ -52,14 +52,11 @@ function sequenceeditor(seq) {
   outerContainer.on('copy', function(evt) {
     var copyData=dna.substring(selection.start,selection.end);
     evt.originalEvent.clipboardData.setData("Text", copyData);
-    evt.preventDefault();
-  });
-
+    evt.preventDefault();});
   outerContainer.on('paste', function(evt) {
     var pasteData=evt.originalEvent.clipboardData.getData("Text");
     alert(pasteData);
-    evt.preventDefault();
-  });
+    evt.preventDefault();});
 
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
@@ -134,7 +131,10 @@ function sequenceeditor(seq) {
       var feature=features[i];
       var firstLine=lineAtBase(feature.location.start);
       var lastLine=lineAtBase(feature.location.end);
-      for(line=firstLine;line<=lastLine;line++) {lineStructure.lineList[line].features.push(feature);}
+      for(line=firstLine;line<=lastLine;line++) {
+        var lineInfo=lineStructure.lineList[line];
+        lineInfo.features.push(feature);
+      }
     }
 
     var runningHeight=0;
@@ -216,23 +216,18 @@ function sequenceeditor(seq) {
           selection.end=getBase(options.evt.offsetX,this);
     	    if(!options.evt.shiftKey) {selection.start=selection.end;}
     	    updateSelection();
-      	}
-      });
+      	}});
       group.on("selectmove", function(options) {
         if (selecting) {
           selection.end=getBase(options.evt.offsetX,this);
           updateSelection();
-        }
-      });
+        }});
       group.on("mousemove", function(options) {
         if (selecting) {
           selection.end=getBase(options.evt.offsetX,this);
           updateSelection();
-        }
-      });
-      group.on("mouseup", function() {
-        selecting=false;
-      });
+        }});
+      group.on("mouseup", function() {selecting=false;});
       featureLayer.add(group);
       group.moveToTop();
     }
@@ -260,8 +255,15 @@ function sequenceeditor(seq) {
     var feature=rangeEvent.feature;
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
+    var featureRange=[Math.max(0,line.start-feature.location.start),
+          Math.min(feature.location.end-feature.location.start,line.end-feature.location.start)];
     var width=end-start;
-    //var complementaryWidth=feature.complementaryLocation.end-feature.complementaryLocation.start;
+    var nonComplementaryLocation={start: line.start, end: line.start};
+    if (feature.nonComplementaryLocation) {nonComplementaryLocation=feature.nonComplementaryLocation;}
+    var nonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
+    var nonComplementaryEnd=Math.min(nonComplementaryLocation.end, line.end)-line.start;
+    var nonComplementaryExtent=nonComplementaryEnd-nonComplementaryStart;
+
     var endCapWidth=10;
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex), feature: feature});
     var featureFill='cornsilk';
@@ -271,13 +273,17 @@ function sequenceeditor(seq) {
     var leftCapOffset=0;
     var endCapTipX=width*fontWidth;
     var endCapBaseX=endCapTipX-endCapWidth;
-    var featureEndX=0;
+    var featureEndX=fontWidth*nonComplementaryExtent;
+    var nonComplementaryStart=0;
+    var nonComplementaryWidth=fontWidth*nonComplementaryExtent;
     if (feature.location.strand==-1) {
       leftCapOffset=endCapWidth;
       endCapBaseX=endCapWidth;
       endCapTipX=0;
-      featureEndX=width*fontWidth;
+      featureEndX=width*fontWidth-nonComplementaryWidth;
+      nonComplementaryStart=width*fontWidth-nonComplementaryWidth;
     }
+
     var shape=new Kinetic.Shape({
       sceneFunc: function(context) {
         context.beginPath();
@@ -294,58 +300,59 @@ function sequenceeditor(seq) {
       shadowColor: 'black',
       shadowBlur: 2,
       shadowOffset: {x: 2, y:2},
-      shadowOpacity: .5
-    });
-    var tooltip=new Kinetic.Label({x: 0, y: 0});
-    /*tooltip.add, width: 50, height: fontSize, opacity: 1,
-      text: {text: 'test', fontFamily: 'Times New Roman', fill: 'black'},
-      rect: {fill: 'yellow', pointerWidth: 20, pointerHeight: 28, lineJoin: 'round'}});*/
-    tooltip.add(new Kinetic.Tag({
-      fill: '#bbb',
+      shadowOpacity: .5});
+    var nonComplementaryFill='pink';
+    var nonComplementaryShape=new Kinetic.Rect({
+      x: nonComplementaryStart,
+      width: nonComplementaryWidth,
+      y: 0,
+      height: fontSize+2,
+      fill: nonComplementaryFill,
+      stroke: 'black',
+      shadowColor: 'black',
+      shadowBlur: 2,
+      shadowOffset: {x: 2, y: 2},
+      shadowOpacity: .5});
+    var tooltip=new Kinetic.Label({x: 0, y: 0, opacity: .75});
+    var tooltipTag=new Kinetic.Tag({
+      fill: 'honeydew',
       stroke: '#333',
       shadowColor: 'black',
       shadowBlur: 10,
-      shadowOffset: [10, 10],
-      shadowOpacity: .2,
+      shadowOffset: [20, 40],
+      shadowOpacity: .9,
       lineJoin: 'round',
       pointerDirection: 'up',
       pointerWidth: 20,
-      pointerHeight: 20,
-      cornerRadius: 5
-    }));
-    tooltip.add(new Kinetic.Text({x: 0, y: 0, fill: 'black', fontSize: fontSize, fontFamily: 'Times New Roman', text: getLabel(feature)}));
-    //var tooltip=new Kinetic.Text({x: 0,})
-    /*var nonComplementaryShape=new Kinetic.Rect({
-      x: 
-
-
-    });*/
+      pointerHeight: 10,
+      cornerRadius: 5});
+    tooltip.add(tooltipTag);
+    tooltip.add(new Kinetic.Text({x: 0, y: 0, padding: 5, fill: 'black', fontSize: fontSize, fontFamily: 'Times New Roman', text: getLabel(feature)}));
+    tooltipTag._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
     shape._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
+    nonComplementaryShape._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
     featureGroup.add(shape);
+    featureGroup.add(nonComplementaryShape);
     var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
     var text=new Kinetic.Text({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
     textGroup.add(text);
-    //featureGroup.add(tooltip);
     featureGroup.add(textGroup);
     tooltipLayer.add(tooltip);
-    text.tooltip=tooltip;
+    featureGroup.tooltip=tooltip;
     tooltip.hide();
     featureGroup.on('click', function(evt) {
       selection.start=feature.location.start;
       selection.end=feature.location.end;
-      updateSelection();
-    });
-    text.on('mousemove', function() {
+      updateSelection();});
+    featureGroup.on('mousemove', function() {
       var mousePos=stage.getPointerPosition();
       this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
       this.tooltip.show();
-      tooltipLayer.draw();
-    });
-    text.on('mouseout', function() {
+      tooltipLayer.draw();});
+    featureGroup.on('mouseout', function() {
       this.tooltip.hide();
-      tooltipLayer.draw();
-    });
+      tooltipLayer.draw();});
     return featureGroup;
   }
 
