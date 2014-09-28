@@ -10,6 +10,7 @@ import polls.SeqToJSON
 import dropbox
 from dropbox.client import DropboxOAuth2Flow
 from xlrd import open_workbook
+from ast import literal_eval
 
 # Create your views here.
 
@@ -27,30 +28,29 @@ def vote(request,poll_id):
 
 def registerdropbox(request):
 	flow=get_dropbox_auth_flow(request.session)
+	copyget=request.GET.copy()
 	getdict=request.session
-	print("auth",request.session["dropbox-auth-csrf-token"],file=sys.stderr)
-	print(dir(getdict),file=sys.stderr)
-	getdict['dropbox-auth-csrf-token']=getdict['dropbox-auth-csrf-token'].decode("utf-8")
+	# this converts the item in the URL to the string representation of its byte array
+	copyget.__setitem__('state',literal_eval(copyget['state']))
+	# this does the same for the item in the session
+	getdict['dropbox-auth-csrf-token']=getdict['dropbox-auth-csrf-token'].decode(encoding="UTF-8")
 	try:
-		print("REGISTER SUCCESS START",file=sys.stderr)
-		access_token, user_id, url_state=flow.finish(request.GET)
+		access_token, user_id, url_state=flow.finish(copyget)
 		request.session['access_token']=access_token
 		request.session['user_id']=user_id
-		print("REGISTER SUCCESS",file=sys.stderr)
 	except DropboxOAuth2Flow.BadRequestException as e:
 		http_status(400)
 	except DropboxOAuth2Flow.BadStateException as e:
 		# Start the auth flow again.
 		return HttpResponseRedirect("http://www.mydomain.com/dropbox_auth_start")
 	except DropboxOAuth2Flow.CsrfException as e:
-		return HttpResponseForbidden()
+		raise e
 	except DropboxOAuth2Flow.NotApprovedException as e:
 		raise e
 	except DropboxOAuth2Flow.ProviderException as e:
 		raise e
 	except Exception as e:
 		raise e
-	print("REGISTERED",file=sys.stderr)
 	return HttpResponseRedirect('kineticjstest.html')
 
 def testjsp(request):
@@ -79,7 +79,6 @@ def getlist(request):
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
 			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
-				print('excel')
 				absolute_path=obj['path']
 				f=client.get_file(absolute_path)
 				s=f.read()
@@ -104,10 +103,8 @@ def getlist(request):
 						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper()])
 						current_row+=1
 			else:
-				print('other')
 				data.append([obj['path'],obj['size'],'','',''])
 	except Exception as e:
-		print(str(e))
 		raise e
 	return HttpResponse(json.dumps(data),content_type='application/json')
 
@@ -127,14 +124,12 @@ def testjsplumb(request):
 
 def getsequence(request):
 	absolute_path=request.POST['name']
-	print("get sequence",file=sys.stderr)
 
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		with client.get_file(absolute_path) as f:
 			s=f.read()
 	except Exception as e:
-		print("exception",file=sys.stderr)
 		raise e
 	#s=render_to_string(absolute_path[1:])
 	output=io.StringIO()
@@ -147,6 +142,5 @@ def getsequence(request):
 
 	SeqIO.write(seq, output, "json")
 	jsonstring=output.getvalue()
-	print("printing json string",file=sys.stderr)
 	# note: the
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')

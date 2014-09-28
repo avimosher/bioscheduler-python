@@ -18,15 +18,31 @@ function sequenceeditor(seq) {
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
   var fontSize=10;
   var fontFamily='monospace';
-  var firstLayer=new Kinetic.Layer();
+  var featureLayer=new Kinetic.Layer();
+  var tooltipLayer=new Kinetic.Layer();
 
-  function addFeature(foundIndex, row, strand) {
+  function addFeature(foundIndex, row, complementarySequence, strand) {
     if (foundIndex==-1) {return;}
     var feature={};
     feature.location={};
     feature.location.start=foundIndex;
-    feature.location.end=foundIndex+row[2].length;
+    feature.location.end=foundIndex+complementarySequence.length;
     feature.location.strand=strand;
+    if (row[3] && row[4]){
+      feature.complementaryLocation={start: foundIndex, end: foundIndex+row[4].length};
+      if(strand==1){
+        feature.nonComplementaryLocation={start: foundIndex-row[3].length, end: foundIndex};
+        feature.location={start: feature.nonComplementaryLocation.start, end: feature.complementaryLocation.end};
+      }
+      else {
+        feature.nonComplementaryLocation={start: foundIndex+complementarySequence.length, end: foundIndex+complementarySequence.length+row[3].length};
+        feature.location={start: feature.complementaryLocation.start, end: feature.nonComplementaryLocation.end};
+      }
+    }
+    else {
+      feature.complementaryLocation={start: foundIndex, end: foundIndex+row[2].length};
+      feature.location=feature.complementaryLocation;
+    }
     feature.featureFill='lime';
     feature.qualifiers={};
     feature.qualifiers.label=[row[0]];
@@ -53,10 +69,10 @@ function sequenceeditor(seq) {
           complementarySequence=row[4];
         }
         var foundIndex=dna.indexOf(complementarySequence);
-        addFeature(foundIndex,row,1);
+        addFeature(foundIndex,row,complementarySequence,1);
         var reverseComplement=reverse(complement(getSequenceFromFasta(complementarySequence)));
         var reverseFoundIndex=dna.indexOf(reverseComplement);
-        addFeature(reverseFoundIndex,row,-1);
+        addFeature(reverseFoundIndex,row,complementarySequence,-1);
       }
     });
     initializeDisplay();
@@ -65,9 +81,9 @@ function sequenceeditor(seq) {
   function computeFontWidth(fontSize, fontFamily) {
     var testString="AGCT";
     var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
-    firstLayer.add(text);
+    featureLayer.add(text);
     var w=text.getWidth();
-    firstLayer.remove(text);
+    featureLayer.remove(text);
     return w/testString.length;
   }
   var fontWidth=computeFontWidth(fontSize, fontFamily);
@@ -83,8 +99,10 @@ function sequenceeditor(seq) {
   var cursor=new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 1, fill: 'black'});
 
   function initializeDisplay() {
-    firstLayer.destroy();
-    firstLayer=new Kinetic.Layer();
+    featureLayer.destroy();
+    featureLayer=new Kinetic.Layer();
+    tooltipLayer.destroy();
+    tooltipLayer=new Kinetic.Layer();
     stage.setWidth($("#"+seq.name).width());
     var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
     lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
@@ -193,10 +211,12 @@ function sequenceeditor(seq) {
         r.selectNodeContents(outerContainer[0]);
         s.removeAllRanges();
         s.addRange(r);
-        selecting=true;
-        selection.end=getBase(options.evt.offsetX,this);
-        if(!options.evt.shiftKey) {selection.start=selection.end;}
-        updateSelection();
+      	if(event.which==1){
+          selecting=true;
+          selection.end=getBase(options.evt.offsetX,this);
+    	    if(!options.evt.shiftKey) {selection.start=selection.end;}
+    	    updateSelection();
+      	}
       });
       group.on("selectmove", function(options) {
         if (selecting) {
@@ -213,11 +233,12 @@ function sequenceeditor(seq) {
       group.on("mouseup", function() {
         selecting=false;
       });
-      firstLayer.add(group);
+      featureLayer.add(group);
       group.moveToTop();
     }
     stage.setHeight(runningHeight+lineSeparation);
-    stage.add(firstLayer);
+    stage.add(featureLayer);
+    stage.add(tooltipLayer);
     updateSelection();
   }
 
@@ -240,6 +261,7 @@ function sequenceeditor(seq) {
     var start=Math.max(feature.location.start, line.start)-line.start;
     var end=Math.min(feature.location.end, line.end)-line.start;
     var width=end-start;
+    //var complementaryWidth=feature.complementaryLocation.end-feature.complementaryLocation.start;
     var endCapWidth=10;
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex), feature: feature});
     var featureFill='cornsilk';
@@ -274,17 +296,55 @@ function sequenceeditor(seq) {
       shadowOffset: {x: 2, y:2},
       shadowOpacity: .5
     });
+    var tooltip=new Kinetic.Label({x: 0, y: 0});
+    /*tooltip.add, width: 50, height: fontSize, opacity: 1,
+      text: {text: 'test', fontFamily: 'Times New Roman', fill: 'black'},
+      rect: {fill: 'yellow', pointerWidth: 20, pointerHeight: 28, lineJoin: 'round'}});*/
+    tooltip.add(new Kinetic.Tag({
+      fill: '#bbb',
+      stroke: '#333',
+      shadowColor: 'black',
+      shadowBlur: 10,
+      shadowOffset: [10, 10],
+      shadowOpacity: .2,
+      lineJoin: 'round',
+      pointerDirection: 'up',
+      pointerWidth: 20,
+      pointerHeight: 20,
+      cornerRadius: 5
+    }));
+    tooltip.add(new Kinetic.Text({x: 0, y: 0, fill: 'black', fontSize: fontSize, fontFamily: 'Times New Roman', text: getLabel(feature)}));
+    //var tooltip=new Kinetic.Text({x: 0,})
+    /*var nonComplementaryShape=new Kinetic.Rect({
+      x: 
+
+
+    });*/
     shape._useBufferCanvas=function() {return false;}; //fix for slow shadow handling in Chrome
     featureGroup.add(shape);
     var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
     var text=new Kinetic.Text({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
       fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
     textGroup.add(text);
+    //featureGroup.add(tooltip);
     featureGroup.add(textGroup);
+    tooltipLayer.add(tooltip);
+    text.tooltip=tooltip;
+    tooltip.hide();
     featureGroup.on('click', function(evt) {
       selection.start=feature.location.start;
       selection.end=feature.location.end;
       updateSelection();
+    });
+    text.on('mousemove', function() {
+      var mousePos=stage.getPointerPosition();
+      this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
+      this.tooltip.show();
+      tooltipLayer.draw();
+    });
+    text.on('mouseout', function() {
+      this.tooltip.hide();
+      tooltipLayer.draw();
     });
     return featureGroup;
   }
@@ -339,7 +399,7 @@ function sequenceeditor(seq) {
     var cursorGroup=groupAtBase(selection.end);
     cursorGroup.add(cursor);
     cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 2});
-    firstLayer.draw();
+    featureLayer.draw();
     var currentSelection=dna.substring(selection.start,selection.end);
     var displayText="";
     $("#"+seq.name+"_tm").css({fontSize: fontSize});
@@ -357,7 +417,7 @@ function sequenceeditor(seq) {
 
   setInterval(function(){
     cursor.setWidth(1-cursor.getWidth());
-    firstLayer.draw();
+    featureLayer.draw();
   },600);
   var canvasElement=$("#"+seq.name+"_container")[0];
   canvasElement.tabIndex=1000;
@@ -382,7 +442,8 @@ function sequenceeditor(seq) {
     }
   }
 
-  firstLayer.draw();
+  featureLayer.draw();
+  tooltipLayer.draw();
 
   var mousePos;
   var container=$("#"+seq.name+"_container");
@@ -416,13 +477,13 @@ function sequenceeditor(seq) {
         };
         if(mousePos.y>bottom){
           container.scrollTop(10+container.scrollTop()); 
-          firstLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
+          featureLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
         }
         if(mousePos.y<top){
           container.scrollTop(-10+container.scrollTop()); 
-          firstLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
+          featureLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
         }
-        //firstLayer.draw();
+        //featureLayer.draw();
       },100);
     }
   });
