@@ -11,8 +11,6 @@ function sequenceeditor(seq) {
   $("#accordion").accordion('refresh');
   $("#accordion").accordion("option","active",-1);
 
-
-  //var stage=new Kinetic.Stage({container: 'contain_canvas', width: 300, height: 200});
   var containCanvas=$("#"+seq.name);
   var outerContainer=$("#"+seq.name+"_tm");
   var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
@@ -32,22 +30,17 @@ function sequenceeditor(seq) {
       feature.complementaryLocation={start: foundIndex, end: foundIndex+row[4].length};
       if(strand==1){
         feature.nonComplementaryLocation={start: foundIndex-row[3].length, end: foundIndex};
-        feature.location={start: feature.nonComplementaryLocation.start, end: feature.complementaryLocation.end};
-      }
+        feature.location={start: feature.nonComplementaryLocation.start, end: feature.complementaryLocation.end};}
       else {
         feature.nonComplementaryLocation={start: foundIndex+complementarySequence.length, end: foundIndex+complementarySequence.length+row[3].length};
-        feature.location={start: feature.complementaryLocation.start, end: feature.nonComplementaryLocation.end};
-      }
-    }
+        feature.location={start: feature.complementaryLocation.start, end: feature.nonComplementaryLocation.end};}}
     else {
       feature.complementaryLocation={start: foundIndex, end: foundIndex+row[2].length};
-      feature.location=feature.complementaryLocation;
-    }
+      feature.location=feature.complementaryLocation;}
     feature.featureFill='lime';
     feature.qualifiers={};
     feature.qualifiers.label=[row[0]];
-    features.push(feature);
-  }
+    features.push(feature);}
 
   outerContainer.on('copy', function(evt) {
     var copyData=dna.substring(selection.start,selection.end);
@@ -57,23 +50,28 @@ function sequenceeditor(seq) {
     var pasteData=evt.originalEvent.clipboardData.getData("Text");
     alert(pasteData);
     evt.preventDefault();});
-
   containCanvas.on("mapoligos", function() {
     $.each($("#example").dataTable().fnGetData(), function(i, row) {
       if (row[2]) {
         var complementarySequence=row[2];
-        if(row[4]) {
-          complementarySequence=row[4];
-        }
+        if(row[4]) {complementarySequence=row[4];}
         var foundIndex=dna.indexOf(complementarySequence);
         addFeature(foundIndex,row,complementarySequence,1);
         var reverseComplement=reverse(complement(getSequenceFromFasta(complementarySequence)));
         var reverseFoundIndex=dna.indexOf(reverseComplement);
-        addFeature(reverseFoundIndex,row,complementarySequence,-1);
-      }
-    });
-    initializeDisplay();
-  });
+        addFeature(reverseFoundIndex,row,complementarySequence,-1);}});
+    initializeDisplay();});
+  containCanvas.on("createfeature", function() {
+    if (selection.start==selection.end) {return;}
+    var strand=1;
+    var feature={};
+    if(selection.end>selection.start) {
+      feature.location={start: selection.start, end: selection.end, strand: 1};}
+    else {feature.location={start: selection.end, end: selection.start, strand: -1};}
+    feature.qualifiers={};
+    feature.qualifiers.label=['test'];
+    features.push(feature);
+    initializeDisplay();});
 
   function computeFontWidth(fontSize, fontFamily) {
     var testString="AGCT";
@@ -81,8 +79,7 @@ function sequenceeditor(seq) {
     featureLayer.add(text);
     var w=text.getWidth();
     featureLayer.remove(text);
-    return w/testString.length;
-  }
+    return w/testString.length;}
   var fontWidth=computeFontWidth(fontSize, fontFamily);
 
   var leftMargin=20;
@@ -103,10 +100,8 @@ function sequenceeditor(seq) {
     stage.setWidth($("#"+seq.name).width());
     var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
     lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
-
     lineStructure.lines=Math.ceil(dna.length/lineStructure.charactersPerLine);
 
-    //canvas.clear();
     var runningTop=lineSeparation;
     lineStructure.lineList=[];
     for(i=0;i<lineStructure.lines;i++){
@@ -125,17 +120,15 @@ function sequenceeditor(seq) {
       group.add(text);
 
       lineStructure.lineList[i]=group;
-      runningTop+=lineSeparation+fontSize;
-    }
+      runningTop+=lineSeparation+fontSize;}
     for(i=0;i<features.length;i++){
       var feature=features[i];
+      feature.index=i;
       var firstLine=lineAtBase(feature.location.start);
       var lastLine=lineAtBase(feature.location.end);
       for(line=firstLine;line<=lastLine;line++) {
         var lineInfo=lineStructure.lineList[line];
-        lineInfo.features.push(feature);
-      }
-    }
+        lineInfo.features.push(feature);}}
 
     var runningHeight=0;
     // figure out feature display
@@ -147,13 +140,11 @@ function sequenceeditor(seq) {
         var feature=lineFeatures[j];
         var lineFeature={};
         rangeEvents.push({base: feature.location.start, type: "start", feature: feature, lineFeature: lineFeature});
-        rangeEvents.push({base: feature.location.end, type: "end", feature: feature, lineFeature: lineFeature});
-      }
+        rangeEvents.push({base: feature.location.end, type: "end", feature: feature, lineFeature: lineFeature});}
       function compareRange(a,b){
         if(a.base<b.base){return -1;}
         if(a.base>b.base){return 1;}
-        return 0;
-      }
+        return 0;}
       rangeEvents.sort(compareRange);
       var active=[];
       var maximumCount=0;
@@ -164,17 +155,13 @@ function sequenceeditor(seq) {
             if (currentCount==maximumCount){
               maximumCount++;
               rangeEvents[j].lineFeature.displayIndex=active.length;
-              active[active.length]=true;
-            }
+              active[active.length]=true;}
             else {
               for (k=0;k<active.length;k++){
                 if (!active[k]) {
                   rangeEvents[j].lineFeature.displayIndex=k;
                   active[k]=true;
-                  break;
-                }
-              }
-            }
+                  break;}}}
             var featureDisplay=drawFeature(rangeEvents[j],line);
             line.add(featureDisplay);
             currentCount++;
@@ -182,10 +169,7 @@ function sequenceeditor(seq) {
           case "end":
             currentCount--;
             active[rangeEvents[j].lineFeature.displayIndex]=false;
-            break;
-        }
-
-      }
+            break;}}
       line.totalHeight=groupHeight(line)+lineSeparation;
       runningHeight+=line.totalHeight;
       var backgroundRect=new Kinetic.Rect({x: 0, y: 0, width: groupWidth(line), height: line.totalHeight, opacity: .1, fill: 'grey'});
@@ -197,9 +181,7 @@ function sequenceeditor(seq) {
         var position=line.position();
         var previousPosition=previousLine.position();
         position.y=previousPosition.y+previousLine.totalHeight;
-        line.position(position);
-      }
-    }
+        line.position(position);}}
     for(i=0;i<lineStructure.lines;i++){
       var group=lineStructure.lineList[i];
       group.index=i;
@@ -229,26 +211,18 @@ function sequenceeditor(seq) {
         }});
       group.on("mouseup", function() {selecting=false;});
       featureLayer.add(group);
-      group.moveToTop();
-    }
+      group.moveToTop();}
     stage.setHeight(runningHeight+lineSeparation);
     stage.add(featureLayer);
     stage.add(tooltipLayer);
-    updateSelection();
-  }
+    updateSelection();}
 
   function getLabel(feature) {
-    if (feature.qualifiers.label) {
-      return feature.qualifiers.label[0];
-    }
+    if (feature.qualifiers.label) {return feature.qualifiers.label[0];}
     var keys=Object.keys(feature.qualifiers);
     for (key in keys) {
-      if (feature.qualifiers[key]) {
-        return feature.qualifiers[key][0];
-      }
-    }
-    return "";
-  }
+      if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
+    return "";}
 
   function drawFeature(rangeEvent,line) {
     var lineFeature=rangeEvent.lineFeature;
@@ -267,9 +241,7 @@ function sequenceeditor(seq) {
     var endCapWidth=10;
     var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex), feature: feature});
     var featureFill='cornsilk';
-    if (feature.featureFill) {
-      featureFill=feature.featureFill;
-    }
+    if (feature.featureFill) {featureFill=feature.featureFill;}
     var leftCapOffset=0;
     var endCapTipX=width*fontWidth;
     var endCapBaseX=endCapTipX-endCapWidth;
@@ -281,8 +253,7 @@ function sequenceeditor(seq) {
       endCapBaseX=endCapWidth;
       endCapTipX=0;
       featureEndX=width*fontWidth-nonComplementaryWidth;
-      nonComplementaryStart=width*fontWidth-nonComplementaryWidth;
-    }
+      nonComplementaryStart=width*fontWidth-nonComplementaryWidth;}
 
     var shape=new Kinetic.Shape({
       sceneFunc: function(context) {
@@ -345,6 +316,22 @@ function sequenceeditor(seq) {
       selection.start=feature.location.start;
       selection.end=feature.location.end;
       updateSelection();});
+    featureGroup.on('mousedown', function(evt) {
+      containCanvas.bind('selectionupdated', featureGroup.selectionUpdateHandler);
+      containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
+    });
+    featureGroup.selectionUpdateHandler=function() {
+      features[feature.index].location.start=Math.min(selection.start,selection.end);
+      features[feature.index].location.end=Math.max(selection.start,selection.end);
+      //initializeDisplay();
+      //console.log("caught selection on "+getLabel(feature));
+    };
+    featureGroup.mouseUpHandler=function() {
+      containCanvas.unbind('selectionupdated', featureGroup.selectionUpdateHandler);
+      containCanvas.unbind('mouseup', featureGroup.mouseUpHandler);
+      console.log("caught mouse up");
+      initializeDisplay();
+    };
     featureGroup.on('mousemove', function() {
       var mousePos=stage.getPointerPosition();
       this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
@@ -353,8 +340,7 @@ function sequenceeditor(seq) {
     featureGroup.on('mouseout', function() {
       this.tooltip.hide();
       tooltipLayer.draw();});
-    return featureGroup;
-  }
+    return featureGroup;}
 
   function groupHeight(group) {
     if (group.getChildren === 'undefined'){
@@ -365,8 +351,7 @@ function sequenceeditor(seq) {
     for(var gi=0;gi<children.length;gi++){
       height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
     }
-    return height;
-  }
+    return height;}
   function groupWidth(group) {
     if (group.getChildren === 'undefined'){
       return group.getWidth();
@@ -376,15 +361,11 @@ function sequenceeditor(seq) {
     for(var gi=0;gi<children.length;gi++){
       width=Math.max(width,children[gi].position().x+children[gi].getWidth());
     }
-    return width;
-  }
-
+    return width;}
   function lineAtBase(base) {return Math.floor(base/lineStructure.charactersPerLine);}
   function groupAtBase(base) {return lineStructure.lineList[lineAtBase(base)];}
   function getBase(X,reference) {return reference.start+Math.floor((X-reference.position().x)/fontWidth);}
-
   function filterSelection(node) {return node.name==='selection';}
-
   function updateSelection() {
     cursor.remove();
     var sortedStart=Math.min(selection.start,selection.end);
@@ -395,30 +376,24 @@ function sequenceeditor(seq) {
       if (group.start>sortedEnd || group.end<sortedStart) {
         groupSelection.position({x: 0, y: 2});
         groupSelection.setWidth(0);
-        continue;
-      }
+        continue;}
       var lineLeft=Math.max(0,sortedStart-group.start);
       var lineRight=Math.min(group.end-group.start,sortedEnd-group.start);
       groupSelection.position({x: lineLeft*fontWidth,y: 2});
       groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
-      groupSelection.setHeight(group.totalHeight);
-    }
+      groupSelection.setHeight(group.totalHeight);}
     var cursorGroup=groupAtBase(selection.end);
     cursorGroup.add(cursor);
     cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 2});
     featureLayer.draw();
     var currentSelection=dna.substring(selection.start,selection.end);
     var displayText="";
+    containCanvas.trigger('selectionupdated');
     $("#"+seq.name+"_tm").css({fontSize: fontSize});
-    if (currentSelection.length>8) {
-      displayText="Tm: "+meltingTemperature(currentSelection);
-    }
-    else {
-      displayText="Tm:";
-    }
+    if (currentSelection.length>8) {displayText="Tm: "+meltingTemperature(currentSelection);}
+    else {displayText="Tm:";}
     displayText+=" Length: "+currentSelection.length;
-    $("#"+seq.name+"_tm").text(displayText);
-  }
+    $("#"+seq.name+"_tm").text(displayText);}
 
   initializeDisplay();
 
@@ -439,32 +414,24 @@ function sequenceeditor(seq) {
         case 39: selection.end=Math.min(selection.end+1,dna.length);break;
         case 40: selection.end=Math.min(selection.end+lineStructure.charactersPerLine,dna.length);break;
         break;
-        default: moved=false;
-      }
+        default: moved=false;}
       if(moved) {
         e.preventDefault();
         if (!e.shiftKey) {selection.start=selection.end;}
-        updateSelection();
-      }
-    }
-  }
+        updateSelection();}}}
 
   featureLayer.draw();
   tooltipLayer.draw();
 
   var mousePos;
   var container=$("#"+seq.name+"_container");
-  var mousePosHandler=function(event) {
-    mousePos = {x: event.clientX, y: event.clientY};
-  };
+  var mousePosHandler=function(event) {mousePos = {x: event.clientX, y: event.clientY};};
 
   var mouseScrollTimer;
   $(window).mouseup(function() {
     selecting=false;
     clearInterval(mouseScrollTimer);
-    $(window).unbind("mousemove", mousePosHandler);
-  });
-
+    $(window).unbind("mousemove", mousePosHandler);});
   $("#"+seq.name).mouseleave(function(event) {
     if(selecting){
       $(window).bind("mousemove", mousePosHandler);
@@ -490,10 +457,8 @@ function sequenceeditor(seq) {
           container.scrollTop(-10+container.scrollTop()); 
           featureLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
         }
-        //featureLayer.draw();
       },100);
-    }
-  });
+    }});
 
   function meltingTemperature(seq) {
     var salt=50;
@@ -508,6 +473,5 @@ function sequenceeditor(seq) {
       dmso: dmso
     });
     t1 = Math.round(tmc.Tm().tm * 10) / 10;
-    return t1;
-  }
+    return t1;}
 }
