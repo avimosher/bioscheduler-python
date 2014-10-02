@@ -94,7 +94,7 @@ var kineticSequence=(function() {
     var lineStructure={};
     var selection={start: 0, end: 0};
     var selecting=false;
-    var cursor=new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 1, fill: 'black'});
+    var cursor=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 1, fill: 'black'});
 
     function initializeDisplay() {
       featureLayer.destroy();
@@ -116,6 +116,7 @@ var kineticSequence=(function() {
         var groupSelection = new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
 
         var group=new Kinetic.Group({x: leftMargin, y: runningTop});
+        group.groupType='parent';
         group.start=start;
         group.end=end;
         group.features=[];
@@ -309,15 +310,28 @@ var kineticSequence=(function() {
       tooltipLayer.add(tooltip);
       featureGroup.tooltip=tooltip;
       tooltip.hide();
-      featureGroup.on('click', function(evt) {
+      featureGroup.selectFeature=function(reverse) {
         selection.start=feature.location.start;
         selection.end=feature.location.end;
-        updateSelection();});
-      featureGroup.editing=false;
+        if(reverse) {
+          selection.start=feature.location.end;
+          selection.end=feature.location.start;
+        }
+        updateSelection();}
+      featureGroup.on('click', function(evt) {this.selectFeature();});
       featureGroup.on('mousedown', function(evt) {
         //containCanvas.bind('selectionupdated', featureGroup.selectionUpdateHandler);
         if (evt.evt.shiftKey) {
-          console.log('shifty');
+          var parentGroup=getParentGroup(this);
+          var clickedBase=getBase(evt.evt.offsetX,parentGroup);
+          console.log(parentGroup);
+          var startOffset=Math.abs(clickedBase-feature.location.start);
+          var endOffset=Math.abs(clickedBase-feature.location.end);
+          if(startOffset<endOffset && startOffset<5) {
+            this.selectFeature(true);}
+          else if (startOffset>endOffset && endOffset<5) {
+            this.selectFeature();}
+          else {return;}
           containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
           shape.setFill('red');}});
       featureGroup.selectionUpdateHandler=function() {
@@ -325,9 +339,9 @@ var kineticSequence=(function() {
         features[feature.index].location.end=Math.max(selection.start,selection.end);};
       featureGroup.mouseUpHandler=function() {
         features[feature.index].location.start=Math.min(selection.start,selection.end);
+        features[feature.index].location.end=Math.max(selection.start,selection.end);
         //containCanvas.unbind('selectionupdated', featureGroup.selectionUpdateHandler);
         containCanvas.unbind('mouseup', featureGroup.mouseUpHandler);
-        console.log("caught mouse up");
         initializeDisplay();};
       featureGroup.on('mousemove', function() {
         var mousePos=stage.getPointerPosition();
@@ -486,6 +500,13 @@ var kineticSequence=(function() {
     var w=text.getWidth();
     layer.remove(text);
     return w/testString.length;}
+  function getParentGroup(obj) {
+    while (obj) {
+      if (obj.groupType=='parent') {return obj;}
+      obj=obj.getParent();
+    }
+    return null;
+  }
 
   return module;
 }());
