@@ -327,9 +327,11 @@ var kineticSequence=(function() {
           console.log(parentGroup);
           var startOffset=Math.abs(clickedBase-feature.location.start);
           var endOffset=Math.abs(clickedBase-feature.location.end);
-          if(startOffset<endOffset && startOffset<5) {
+          //alert(startOffset+" "+endOffset);
+          var baseThreshold=8;
+          if(startOffset<endOffset && startOffset<baseThreshold) {
             this.selectFeature(true);}
-          else if (startOffset>endOffset && endOffset<5) {
+          else if (startOffset>endOffset && endOffset<baseThreshold) {
             this.selectFeature();}
           else {return;}
           containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
