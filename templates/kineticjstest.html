@@ -104,7 +104,7 @@
           xhr.setRequestHeader("X-CSRFToken", csrftoken);
         },
         success: function(seq) {
-          sequenceeditor(seq);
+          kineticSequence.sequenceEditor(seq);
         },
         error: function(XMLHttpRequest,textStatus,errorThrown) {
           alert("Status: " + textStatus); alert("Error: " + errorThrown);
