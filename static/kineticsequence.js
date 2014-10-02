@@ -1,29 +1,29 @@
 var kineticSequence=(function() {
-  var my={};
+  var module={};
 
-  my.activeSequences={};
+  module.activeSequences={};
 
-  my.sequenceEditor=function (seq) {
-    var activeIndex=my.activeSequences[seq.name];
+  module.sequenceEditor=function (seq) {
+    var activeIndex=module.activeSequences[seq.name];
+    var $accordion=$("#accordion");
     if (typeof activeIndex!='undefined') {
-      $("#accordion").accordion("option","active",activeIndex);
-      return;
-    }
+      $accordion.accordion("option","active",activeIndex);
+      return;}
     dna=seq.seq;
     features=seq.features;
 
     var $header=$('<h3/>',{text: seq.name});
     var $div=$('<div/>',{class: 'tab_container', id: seq.name+"_container"});
-    $('<p/>',{id: seq.name+"_tm", text: "Tm: "}).appendTo($div);
+    var outerContainer=$('<p/>',{id: seq.name+"_tm", text: "Tm: "});
+    outerContainer.appendTo($div);
     $('<br>').appendTo($div);
-    $('<div/>',{class: 'contain_canvas',id: seq.name}).appendTo($div);
-    my.activeSequences[seq.name]=$("#accordion h3").length;
-    $("#accordion").append([$header,$div]);
-    $("#accordion").accordion('refresh');
-    $("#accordion").accordion("option","active",my.activeSequences[seq.name]);
+    var containCanvas=$('<div/>',{class: 'contain_canvas',id: seq.name});
+    containCanvas.appendTo($div);
+    module.activeSequences[seq.name]=$accordion.children("h3").length;
+    $accordion.append([$header,$div]);
+    $accordion.accordion('refresh');
+    $accordion.accordion("option","active",module.activeSequences[seq.name]);
 
-    var containCanvas=$("#"+seq.name);
-    var outerContainer=$("#"+seq.name+"_tm");
     var stage=new Kinetic.Stage({container: seq.name, width: 300, height: 200});
     var fontSize=10;
     var fontFamily='monospace';
@@ -84,14 +84,7 @@ var kineticSequence=(function() {
       features.push(feature);
       initializeDisplay();});
 
-    function computeFontWidth(fontSize, fontFamily) {
-      var testString="AGCT";
-      var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
-      featureLayer.add(text);
-      var w=text.getWidth();
-      featureLayer.remove(text);
-      return w/testString.length;}
-    var fontWidth=computeFontWidth(fontSize, fontFamily);
+    var fontWidth=computeFontWidth(featureLayer, fontSize, fontFamily);
 
     var leftMargin=20;
     var rightMargin=20;
@@ -108,7 +101,7 @@ var kineticSequence=(function() {
       featureLayer=new Kinetic.Layer();
       tooltipLayer.destroy();
       tooltipLayer=new Kinetic.Layer();
-      stage.setWidth($("#"+seq.name).width());
+      stage.setWidth(containCanvas.width());
       var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
       lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
       lineStructure.lines=Math.ceil(dna.length/lineStructure.charactersPerLine);
@@ -120,7 +113,7 @@ var kineticSequence=(function() {
         var end=Math.min(dna.length,(i+1)*lineStructure.charactersPerLine);
         var subtext=dna.substring(start,end);
         var text=new Kinetic.Text({text: subtext, x: 0, top: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'black'});
-        var groupSelection = new Kinetic.Rect({x: 0, y: 2, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+        var groupSelection = new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
 
         var group=new Kinetic.Group({x: leftMargin, y: runningTop});
         group.start=start;
@@ -228,13 +221,6 @@ var kineticSequence=(function() {
       stage.add(tooltipLayer);
       updateSelection();}
 
-    function getLabel(feature) {
-      if (feature.qualifiers.label) {return feature.qualifiers.label[0];}
-      var keys=Object.keys(feature.qualifiers);
-      for (key in keys) {
-        if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
-      return "";}
-
     function drawFeature(rangeEvent,line) {
       var lineFeature=rangeEvent.lineFeature;
       var feature=rangeEvent.feature;
@@ -334,21 +320,15 @@ var kineticSequence=(function() {
           console.log('shifty');
           containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
           shape.setFill('red');}});
-      featureGroup.on('dblclick', function() {
-      });
       featureGroup.selectionUpdateHandler=function() {
         features[feature.index].location.start=Math.min(selection.start,selection.end);
-        features[feature.index].location.end=Math.max(selection.start,selection.end);
-        //initializeDisplay();
-        //console.log("caught selection on "+getLabel(feature));
-      };
+        features[feature.index].location.end=Math.max(selection.start,selection.end);};
       featureGroup.mouseUpHandler=function() {
         features[feature.index].location.start=Math.min(selection.start,selection.end);
         //containCanvas.unbind('selectionupdated', featureGroup.selectionUpdateHandler);
         containCanvas.unbind('mouseup', featureGroup.mouseUpHandler);
         console.log("caught mouse up");
-        initializeDisplay();
-      };
+        initializeDisplay();};
       featureGroup.on('mousemove', function() {
         var mousePos=stage.getPointerPosition();
         this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
@@ -359,26 +339,7 @@ var kineticSequence=(function() {
         tooltipLayer.draw();});
       return featureGroup;}
 
-    function groupHeight(group) {
-      if (group.getChildren === 'undefined'){
-        return group.getHeight();
-      }
-      var children=group.getChildren();
-      var height=0;
-      for(var gi=0;gi<children.length;gi++){
-        height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
-      }
-      return height;}
-    function groupWidth(group) {
-      if (group.getChildren === 'undefined'){
-        return group.getWidth();
-      }
-      var children=group.getChildren();
-      var width=0;
-      for(var gi=0;gi<children.length;gi++){
-        width=Math.max(width,children[gi].position().x+children[gi].getWidth());
-      }
-      return width;}
+
     function lineAtBase(base) {return Math.floor(base/lineStructure.charactersPerLine);}
     function groupAtBase(base) {return lineStructure.lineList[lineAtBase(base)];}
     function getBase(X,reference) {return reference.start+Math.floor((X-reference.position().x)/fontWidth);}
@@ -391,26 +352,26 @@ var kineticSequence=(function() {
         var group=lineStructure.lineList[i];
         var groupSelection=group.getChildren(filterSelection)[0];
         if (group.start>sortedEnd || group.end<sortedStart) {
-          groupSelection.position({x: 0, y: 2});
+          groupSelection.position({x: 0, y: 0});
           groupSelection.setWidth(0);
           continue;}
         var lineLeft=Math.max(0,sortedStart-group.start);
         var lineRight=Math.min(group.end-group.start,sortedEnd-group.start);
-        groupSelection.position({x: lineLeft*fontWidth,y: 2});
+        groupSelection.position({x: lineLeft*fontWidth,y: 0});
         groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
         groupSelection.setHeight(group.totalHeight);}
       var cursorGroup=groupAtBase(selection.end);
       cursorGroup.add(cursor);
-      cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 2});
+      cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 0});
       featureLayer.draw();
       var currentSelection=dna.substring(selection.start,selection.end);
       var displayText="";
       containCanvas.trigger('selectionupdated');
-      $("#"+seq.name+"_tm").css({fontSize: fontSize});
-      if (currentSelection.length>8) {displayText="Tm: "+meltingTemperature(currentSelection);}
+      outerContainer.css({fontSize: fontSize});
+      if (currentSelection.length>8) {displayText="Tm: "+module.meltingTemperature(currentSelection);}
       else {displayText="Tm:";}
       displayText+=" Length: "+currentSelection.length;
-      $("#"+seq.name+"_tm").text(displayText);}
+      outerContainer.text(displayText);}
 
     initializeDisplay();
 
@@ -418,7 +379,7 @@ var kineticSequence=(function() {
       cursor.setWidth(1-cursor.getWidth());
       featureLayer.draw();
     },600);
-    var canvasElement=$("#"+seq.name+"_container")[0];
+    var canvasElement=$div[0];
     canvasElement.tabIndex=1000;
     canvasElement.addEventListener("keydown",doKeyDown,false);
 
@@ -441,7 +402,6 @@ var kineticSequence=(function() {
     tooltipLayer.draw();
 
     var mousePos;
-    var container=$("#"+seq.name+"_container");
     var mousePosHandler=function(event) {mousePos = {x: event.clientX, y: event.clientY};};
 
     var mouseScrollTimer;
@@ -449,12 +409,12 @@ var kineticSequence=(function() {
       selecting=false;
       clearInterval(mouseScrollTimer);
       $(window).unbind("mousemove", mousePosHandler);});
-    $("#"+seq.name).mouseleave(function(event) {
+    containCanvas.mouseleave(function(event) {
       if(selecting){
         $(window).bind("mousemove", mousePosHandler);
         mouseScrollTimer=setInterval(function(){
-          var top=container.position().top;
-          var bottom=top+container.outerHeight(true);
+          var top=$div.position().top;
+          var bottom=top+$div.outerHeight(true);
           var eventX=mousePos.x;
           var eventY=Math.max(top+10,Math.min(bottom-10,mousePos.y));
           var offsetX=eventX-containCanvas.position().left;
@@ -467,30 +427,65 @@ var kineticSequence=(function() {
             }
           };
           if(mousePos.y>bottom){
-            container.scrollTop(10+container.scrollTop()); 
-            featureLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
-          }
+            $div.scrollTop(10+$div.scrollTop()); 
+            if (intersectedFeature=featureLayer.getIntersection({x: eventX, y: eventY})){
+              intersectedFeature.fire('selectmove',clickEvent,true);}}
           if(mousePos.y<top){
-            container.scrollTop(-10+container.scrollTop()); 
-            featureLayer.getIntersection({x: eventX, y: eventY}).fire('selectmove',clickEvent,true);
-          }
+            $div.scrollTop(-10+$div.scrollTop());
+            if (intersectedFeature=featureLayer.getIntersection({x: eventX, y: eventY})){
+              intersectedFeature.fire('selectmove',clickEvent,true);}}
         },100);
       }});
-
-    function meltingTemperature(seq) {
-      var salt=50;
-      var ct=500/1000.0; // concentration in uM
-      var dmso=0;
-      var meth=1;
-      tmc = NEB.createTmCalc({
-        seq: seq,
-        ct: ct,
-        salt: salt,
-        method: meth,
-        dmso: dmso
-      });
-      t1 = Math.round(tmc.Tm().tm * 10) / 10;
-      return t1;}
   };
-  return my;
+
+  module.meltingTemperature=function(seq) {
+    var salt=50;
+    var ct=500/1000.0; // concentration in uM
+    var dmso=0;
+    var meth=1;
+    tmc = NEB.createTmCalc({
+      seq: seq,
+      ct: ct,
+      salt: salt,
+      method: meth,
+      dmso: dmso
+    });
+    t1 = Math.round(tmc.Tm().tm * 10) / 10;
+    return t1;};
+
+  function groupHeight(group) {
+    if (group.getChildren === 'undefined'){
+      return group.getHeight();
+    }
+    var children=group.getChildren();
+    var height=0;
+    for(var gi=0;gi<children.length;gi++){
+      height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
+    }
+    return height;}
+  function groupWidth(group) {
+    if (group.getChildren === 'undefined'){
+      return group.getWidth();
+    }
+    var children=group.getChildren();
+    var width=0;
+    for(var gi=0;gi<children.length;gi++){
+      width=Math.max(width,children[gi].position().x+children[gi].getWidth());
+    }
+    return width;}
+  function getLabel(feature) {
+    if (feature.qualifiers.label) {return feature.qualifiers.label[0];}
+    var keys=Object.keys(feature.qualifiers);
+    for (key in keys) {
+      if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
+    return "";}
+  function computeFontWidth(layer, fontSize, fontFamily) {
+    var testString="AGCT";
+    var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
+    layer.add(text);
+    var w=text.getWidth();
+    layer.remove(text);
+    return w/testString.length;}
+
+  return module;
 }());
