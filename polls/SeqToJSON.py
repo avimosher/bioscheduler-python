@@ -4,15 +4,30 @@ from Bio.Alphabet import single_letter_alphabet
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqIO.Interfaces import SequentialSequenceWriter
+from Bio.SeqFeature import SeqFeature, FeatureLocation
 import json
 import sys
+
+def convert_from_features(features):
+    seqFeatures=[]
+    try:
+        for feature in features:
+            location=feature.pop('location', '')
+            feature.pop('index','')
+            seqFeatures.append(SeqFeature(location=FeatureLocation(**location),**feature))
+    except Exception as e:
+        print(str(e))
+        raise e
+
+    return seqFeatures
 
 def SeqFromJSON(handle, alphabet = single_letter_alphabet, title2ids=None ):
     jsonObj = json.loads( handle.read() )
     if hasattr(jsonObj,'update'):
         # then it's a dict, so we've only one record.
         jsonSeq = jsonObj.pop('seq', '')
-        yield SeqRecord( Seq( jsonSeq , alphabet), **jsonObj )
+        jsonFeatures = jsonObj.pop('features', '')
+        yield SeqRecord( Seq( jsonSeq , alphabet), features=convert_from_features(jsonFeatures), **jsonObj )
     else:
         # more than one record
         for jsonRecord in jsonObj:

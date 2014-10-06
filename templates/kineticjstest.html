@@ -72,22 +72,46 @@
   }
   </style>
   <script id="mainscript" class="init">
+  function getCookie(name) {
+      var cookieValue = null;
+      if (document.cookie && document.cookie != '') {
+          var cookies = document.cookie.split(';');
+          for (var i = 0; i < cookies.length; i++) {
+              var cookie = jQuery.trim(cookies[i]);
+              // Does this cookie string begin with the name we want?
+              if (cookie.substring(0, name.length + 1) == (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+  }
+
+  function savesequence(sequence){
+    var csrftoken = getCookie('csrftoken');
+    $.ajax({
+      url: 'savesequence',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        sequence: JSON.stringify(sequence),
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      },
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);
+      },
+      success: function(seq) {
+        alert('sequence saved');
+      },
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);
+      }
+    });
+  }
   $(document).ready(function() {
-    function getCookie(name) {
-        var cookieValue = null;
-        if (document.cookie && document.cookie != '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
-                // Does this cookie string begin with the name we want?
-                if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
+
     var csrftoken = getCookie('csrftoken');
 
     function loadsequence(sequencePath){
@@ -198,10 +222,14 @@
         else if (key=='createfeature') {
           options.$trigger.trigger("createfeature");
         }
+        else if (key=='save') {
+          options.$trigger.trigger("save");
+        }
       },
       items: {
         "map": {name: "Map Oligos", icon: "edit"},
         "createfeature": {name: "Create Feature", icon: "cut"},
+        "save": {name: "Save", icon: "save"},
         "sep1": "---------",
         "quit": {name: "Quit", icon: "quit"}
       }

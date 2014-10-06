@@ -61,6 +61,9 @@ var kineticSequence=(function() {
       var pasteData=evt.originalEvent.clipboardData.getData("Text");
       alert(pasteData);
       evt.preventDefault();});
+    containCanvas.on("save", function() {
+      savesequence(seq);
+    });
     containCanvas.on("mapoligos", function() {
       $.each($("#example").dataTable().fnGetData(), function(i, row) {
         if (row[2]) {
@@ -345,12 +348,37 @@ var kineticSequence=(function() {
         //containCanvas.unbind('selectionupdated', featureGroup.selectionUpdateHandler);
         containCanvas.unbind('mouseup', featureGroup.mouseUpHandler);
         initializeDisplay();};
-      featureGroup.on('mousemove', function() {
+      function nearFeatureBoundary(base,feature) {
+        var startOffset=Math.abs(base-feature.location.start);
+        var endOffset=Math.abs(base-feature.location.end);
+        //alert(startOffset+" "+endOffset);
+        var baseThreshold=8;
+        if(startOffset<baseThreshold) {
+          return true;}
+        else if (endOffset<baseThreshold) {
+          return true;}
+        if (feature.nonComplementaryLocation) {
+          var centerOffset=Math.abs(base-feature.nonComplementaryLocation.end);
+          if (typeof centerOffset != 'undefined' && centerOffset<baseThreshold) {
+            return true;}}
+        return false;
+      }
+      featureGroup.on('mousemove', function(options) {
+        var evt=options.evt;
+        var cursorType='default';
+        if (evt.shiftKey) {
+          var parentGroup=getParentGroup(this);
+          var clickedBase=getBase(evt.offsetX,parentGroup);
+          if (nearFeatureBoundary(clickedBase,feature)){
+            cursorType='pointer';}
+        }
+        document.body.style.cursor=cursorType;
         var mousePos=stage.getPointerPosition();
         this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
         this.tooltip.show();
         tooltipLayer.draw();});
       featureGroup.on('mouseout', function() {
+        document.body.style.cursor='default';
         this.tooltip.hide();
         tooltipLayer.draw();});
       return featureGroup;}
@@ -509,6 +537,5 @@ var kineticSequence=(function() {
     }
     return null;
   }
-
   return module;
 }());

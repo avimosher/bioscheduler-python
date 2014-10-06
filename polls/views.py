@@ -5,12 +5,17 @@ from django.template import RequestContext
 import json
 import sys
 import io
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+from Bio.SeqFeature import SeqFeature
 from Bio import SeqIO
+from Bio.Alphabet import IUPAC
 import polls.SeqToJSON
 import dropbox
 from dropbox.client import DropboxOAuth2Flow
 from xlrd import open_workbook
 from ast import literal_eval
+import traceback
 
 # Create your views here.
 
@@ -121,6 +126,23 @@ def kineticjstest(request):
 
 def testjsplumb(request):
 	return render(request, 'testjsplumb.html')
+
+def savesequence(request):
+	sequence_json=request.POST['sequence']
+	seq_handle=SeqIO.parse(io.StringIO(sequence_json),'json')
+	for index, record in enumerate(seq_handle):
+		try:
+			newseq=SeqRecord(Seq(str(record.seq),IUPAC.unambiguous_dna),id="testing")
+			newseq.features=record.features
+			output=io.StringIO()
+			SeqIO.write(newseq, output, 'genbank')
+		except Exception as e:
+			print(str(e))
+			traceback.print_exc()
+			raise e
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		client.put_file("/testing.gb",output)
+	return HttpResponse('', content_type='application/json')
 
 def getsequence(request):
 	absolute_path=request.POST['name']
