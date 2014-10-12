@@ -12,6 +12,16 @@ var kineticSequence=(function() {
     dna=seq.seq;
     features=seq.features;
 
+    for (var i=0;i<features.length;i++) {
+      var feature=features[i];
+      if (!feature.complementaryLocation) {
+        feature.complementaryLocation={};
+        for (var k in feature.location){feature.complementaryLocation[k]=feature.location[k];}}
+      if (!feature.nonComplementaryExtent) {feature.nonComplementaryExtent=0;}
+      if (feature.location.strand==1) {feature.location.start=feature.complementaryLocation.start-feature.nonComplementaryExtent;}
+      else {feature.location.end=feature.complementaryLocation.end+feature.nonComplementaryExtent;}
+    }
+
     var $header=$('<h3/>',{text: seq.name});
     var $div=$('<div/>',{class: 'tab_container', id: seq.name+"_container"});
     var outerContainer=$('<p/>',{id: seq.name+"_tm", text: "Tm: "});
@@ -36,9 +46,9 @@ var kineticSequence=(function() {
       feature.location={};
       feature.location.start=foundIndex;
       feature.location.end=foundIndex+complementarySequence.length;
-      feature.location.strand=strand;
       if (row[3] && row[4]){
         feature.complementaryLocation={start: foundIndex, end: foundIndex+row[4].length};
+        feature.nonComplementaryExtent=row[3].length;
         if(strand==1){
           feature.nonComplementaryLocation={start: foundIndex-row[3].length, end: foundIndex};
           feature.location={start: feature.nonComplementaryLocation.start, end: feature.complementaryLocation.end};}
@@ -48,6 +58,7 @@ var kineticSequence=(function() {
       else {
         feature.complementaryLocation={start: foundIndex, end: foundIndex+row[2].length};
         feature.location=feature.complementaryLocation;}
+      feature.location.strand=strand;
       feature.featureFill='lime';
       feature.qualifiers={};
       feature.qualifiers.label=[row[0]];
@@ -228,16 +239,22 @@ var kineticSequence=(function() {
     function drawFeature(rangeEvent,line) {
       var lineFeature=rangeEvent.lineFeature;
       var feature=rangeEvent.feature;
+      var strand=feature.location.strand;
       var start=Math.max(feature.location.start, line.start)-line.start;
       var end=Math.min(feature.location.end, line.end)-line.start;
       var featureRange=[Math.max(0,line.start-feature.location.start),
             Math.min(feature.location.end-feature.location.start,line.end-feature.location.start)];
       var width=end-start;
       var nonComplementaryLocation={start: line.start, end: line.start};
-      if (feature.nonComplementaryLocation) {nonComplementaryLocation=feature.nonComplementaryLocation;}
-      var nonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
-      var nonComplementaryEnd=Math.min(nonComplementaryLocation.end, line.end)-line.start;
-      var nonComplementaryExtent=nonComplementaryEnd-nonComplementaryStart;
+      if (feature.nonComplementaryExtent) {
+        console.log(feature);
+        nonComplementaryLocation={start: strand==1?(feature.complementaryLocation.start-feature.nonComplementaryExtent):feature.complementaryLocation.end,
+          end: strand==1?feature.complementaryLocation.start:(feature.complementaryLocation.end+feature.nonComplementaryExtent)};
+        console.log(nonComplementaryLocation);
+      }
+      var lineNonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
+      var lineNonComplementaryEnd=Math.min(nonComplementaryLocation.end, line.end)-line.start;
+      var nonComplementaryExtent=lineNonComplementaryEnd-lineNonComplementaryStart;
 
       var endCapWidth=10;
       var featureGroup=new Kinetic.Group({x: fontWidth*start, y: 2+(6+fontSize)*(1+lineFeature.displayIndex), feature: feature});
@@ -247,14 +264,14 @@ var kineticSequence=(function() {
       var endCapTipX=width*fontWidth;
       var endCapBaseX=endCapTipX-endCapWidth;
       var featureEndX=fontWidth*nonComplementaryExtent;
-      var nonComplementaryStart=0;
-      var nonComplementaryWidth=fontWidth*nonComplementaryExtent;
+      var lineNonComplementaryStart=0;
+      var lineNonComplementaryWidth=fontWidth*nonComplementaryExtent;
       if (feature.location.strand==-1) {
         leftCapOffset=endCapWidth;
         endCapBaseX=endCapWidth;
         endCapTipX=0;
-        featureEndX=width*fontWidth-nonComplementaryWidth;
-        nonComplementaryStart=width*fontWidth-nonComplementaryWidth;}
+        featureEndX=width*fontWidth-lineNonComplementaryWidth;
+        lineNonComplementaryStart=width*fontWidth-lineNonComplementaryWidth;}
 
       var shape=new Kinetic.Shape({
         sceneFunc: function(context) {
@@ -275,8 +292,8 @@ var kineticSequence=(function() {
         shadowOpacity: .5});
       var nonComplementaryFill='pink';
       var nonComplementaryShape=new Kinetic.Rect({
-        x: nonComplementaryStart,
-        width: nonComplementaryWidth,
+        x: lineNonComplementaryStart,
+        width: lineNonComplementaryWidth,
         y: 0,
         height: fontSize+2,
         fill: nonComplementaryFill,
@@ -313,45 +330,72 @@ var kineticSequence=(function() {
       tooltipLayer.add(tooltip);
       featureGroup.tooltip=tooltip;
       tooltip.hide();
-      featureGroup.selectFeature=function(reverse) {
+      featureGroup.selectFeature=function(focus,strand) {
         selection.start=feature.location.start;
         selection.end=feature.location.end;
-        if(reverse) {
-          selection.start=feature.location.end;
-          selection.end=feature.location.start;
-        }
+        if(focus=='start'){
+          selection.start=complementaryEnd(feature);
+          selection.end=complementaryStart(feature);}
+        else if (focus=='noncomplementary_start') {
+          selection.start=nonComplementaryEnd(feature);
+          selection.end=nonComplementaryStart(feature);}
+        else if (focus=='noncomplementary_end') {
+          selection.start=nonComplementaryStart(feature);
+          selection.end=nonComplementaryEnd(feature);}
+        else if (focus=='end') {
+          selection.start=complementaryStart(feature);
+          selection.end=complementaryEnd(feature);}
         updateSelection();}
-      featureGroup.on('click', function(evt) {this.selectFeature();});
-      featureGroup.on('mousedown', function(evt) {
-        //containCanvas.bind('selectionupdated', featureGroup.selectionUpdateHandler);
-        if (evt.evt.shiftKey) {
-          var parentGroup=getParentGroup(this);
-          var clickedBase=getBase(evt.evt.offsetX,parentGroup);
-          console.log(parentGroup);
-          var startOffset=Math.abs(clickedBase-feature.location.start);
-          var endOffset=Math.abs(clickedBase-feature.location.end);
-          //alert(startOffset+" "+endOffset);
-          var baseThreshold=8;
-          if(startOffset<endOffset && startOffset<baseThreshold) {
-            this.selectFeature(true);}
-          else if (startOffset>endOffset && endOffset<baseThreshold) {
-            this.selectFeature();}
-          else {return;}
-          containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
-          shape.setFill('red');}});
-      featureGroup.selectionUpdateHandler=function() {
-        features[feature.index].location.start=Math.min(selection.start,selection.end);
-        features[feature.index].location.end=Math.max(selection.start,selection.end);};
+      featureGroup.on('dblclick', function(evt) {this.selectFeature();});
+      featureGroup.on('mousedown', function(options) {
+        var parentGroup=getParentGroup(this);
+        var clickedBase=getBase(options.evt.offsetX,parentGroup);
+        var selectFeatureOptions=[];
+        if (options.evt.shiftKey) {
+          var nonComplementaryStartOffset=Math.abs(clickedBase-nonComplementaryStart(feature));
+          var nonComplementaryEndOffset=Math.abs(clickedBase-nonComplementaryEnd(feature));
+          selectFeatureOptions.push({offset: nonComplementaryStartOffset, type: 'noncomplementary_start'});
+          selectFeatureOptions.push({offset: nonComplementaryEndOffset, type: 'noncomplementary_end'});}
+        else {
+          var startOffset=Math.abs(clickedBase-complementaryStart(feature));
+          var endOffset=Math.abs(clickedBase-complementaryEnd(feature));
+          selectFeatureOptions.push({offset: startOffset, type: 'start'});
+          selectFeatureOptions.push({offset: endOffset, type: 'end'});}
+        var baseThreshold=8;
+        for (var i=0;i<selectFeatureOptions.length;i++) {
+          var featureOption=selectFeatureOptions[i];
+          if (featureOption.offset<baseThreshold) {
+            this.selectFeature(featureOption.type,strand);
+            options.cancelBubble=true;
+            selecting=true;
+            this.selectionType=featureOption.type;
+            containCanvas.bind('mouseup', featureGroup.mouseUpHandler);
+            shape.setFill('red');
+            break;}}});
       featureGroup.mouseUpHandler=function() {
-        features[feature.index].location.start=Math.min(selection.start,selection.end);
-        features[feature.index].location.end=Math.max(selection.start,selection.end);
-        //containCanvas.unbind('selectionupdated', featureGroup.selectionUpdateHandler);
+        var indexFeature=features[feature.index];
+        console.log(featureGroup.selectionType);
+
+        var newComplementaryLength=complementaryExtent(feature);
+        var newComplementaryEnd=complementaryEnd(feature);
+        var newNonComplementaryLength=indexFeature.nonComplementaryExtent;
+        switch (featureGroup.selectionType) {
+          case 'end':
+            newComplementaryEnd=selection.end;
+          case 'start':
+            newComplementaryLength=Math.abs(selection.start-selection.end);
+            break;
+          case 'noncomplementary_end':
+            newComplementaryLength=Math.abs(complementaryEnd(feature)-selection.end);
+          case 'noncomplementary_start':
+            newNonComplementaryLength=Math.abs(selection.start-selection.end);
+            break;}
+        updateFeature(indexFeature,newComplementaryEnd,newComplementaryLength,newNonComplementaryLength);
         containCanvas.unbind('mouseup', featureGroup.mouseUpHandler);
         initializeDisplay();};
       function nearFeatureBoundary(base,feature) {
         var startOffset=Math.abs(base-feature.location.start);
         var endOffset=Math.abs(base-feature.location.end);
-        //alert(startOffset+" "+endOffset);
         var baseThreshold=8;
         if(startOffset<baseThreshold) {
           return true;}
@@ -370,8 +414,7 @@ var kineticSequence=(function() {
           var parentGroup=getParentGroup(this);
           var clickedBase=getBase(evt.offsetX,parentGroup);
           if (nearFeatureBoundary(clickedBase,feature)){
-            cursorType='pointer';}
-        }
+            cursorType='pointer';}}
         document.body.style.cursor=cursorType;
         var mousePos=stage.getPointerPosition();
         this.tooltip.setPosition({x: mousePos.x, y: mousePos.y+5});
@@ -415,6 +458,8 @@ var kineticSequence=(function() {
       if (currentSelection.length>8) {displayText="Tm: "+module.meltingTemperature(currentSelection);}
       else {displayText="Tm:";}
       displayText+=" Length: "+currentSelection.length;
+      displayText+=" Start: "+selection.start;
+      displayText+=" End: "+selection.end;
       outerContainer.text(displayText);}
 
     initializeDisplay();
@@ -523,6 +568,31 @@ var kineticSequence=(function() {
     for (key in keys) {
       if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
     return "";}
+  function complementaryEnd(feature) {
+    if (feature.location.strand==1) {return feature.complementaryLocation.end;}
+    return feature.complementaryLocation.start;}
+  function complementaryStart(feature) {
+    if (feature.location.strand==1) {return feature.complementaryLocation.start;}
+    return feature.complementaryLocation.end;}
+  function nonComplementaryStart(feature) {
+    if (feature.location.strand==1) {return complementaryStart(feature)-feature.nonComplementaryExtent;}
+    return complementaryStart(feature)+feature.nonComplementaryExtent;}
+  function nonComplementaryEnd(feature) {
+    return complementaryStart(feature);}
+  function complementaryExtent(feature) {
+    return Math.abs(feature.complementaryLocation.start-feature.complementaryLocation.end);}
+  function updateFeature(feature,complementaryEnd,complementaryLength,nonComplementaryLength) {
+    feature.nonComplementaryExtent=nonComplementaryLength;
+    if (feature.location.strand==1) {
+      feature.complementaryLocation.end=complementaryEnd;
+      feature.complementaryLocation.start=complementaryEnd-complementaryLength;
+      feature.location.end=complementaryEnd;
+      feature.location.start=complementaryEnd-complementaryLength-nonComplementaryLength;}
+    else {
+      feature.complementaryLocation.start=complementaryEnd;
+      feature.complementaryLocation.end=complementaryEnd+complementaryLength;          
+      feature.location.start=complementaryEnd;
+      feature.location.end=complementaryEnd+complementaryLength+nonComplementaryLength;}}
   function computeFontWidth(layer, fontSize, fontFamily) {
     var testString="AGCT";
     var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
