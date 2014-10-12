@@ -91,8 +91,14 @@ var kineticSequence=(function() {
       var strand=1;
       var feature={};
       if(selection.end>selection.start) {
-        feature.location={start: selection.start, end: selection.end, strand: 1};}
-      else {feature.location={start: selection.end, end: selection.start, strand: -1};}
+        feature.location={start: selection.start, end: selection.end, strand: 1};
+        feature.complementaryLocation={start: selection.start, end: selection.end};
+      }
+      else {
+        feature.location={start: selection.end, end: selection.start, strand: -1};
+        feature.complementaryLocation={start: selection.end, end: selection.start};
+      }
+      feature.nonComplementaryExtent=0;
       feature.qualifiers={};
       feature.qualifiers.label=['test'];
       features.push(feature);
