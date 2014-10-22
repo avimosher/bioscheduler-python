@@ -3,24 +3,24 @@ var kineticSequence=(function() {
 
   module.activeSequences={};
 
-  module.sequenceEditor=function (seq) {
+  module.sequenceEditor=function (seq, sequencePath) {
     var activeIndex=module.activeSequences[seq.name];
     var $accordion=$("#accordion");
     if (typeof activeIndex!='undefined') {
       $accordion.accordion("option","active",activeIndex);
       return;}
-    dna=seq.seq;
-    features=seq.features;
+    var dna=seq.seq;
+    var originalFeatures=seq.features;
+    var newFeatures=[];
 
-    for (var i=0;i<features.length;i++) {
-      var feature=features[i];
+    for (var i=0;i<originalFeatures.length;i++) {
+      var feature=originalFeatures[i];
       if (!feature.complementaryLocation) {
         feature.complementaryLocation={};
         for (var k in feature.location){feature.complementaryLocation[k]=feature.location[k];}}
       if (!feature.nonComplementaryExtent) {feature.nonComplementaryExtent=0;}
       if (feature.location.strand==1) {feature.location.start=feature.complementaryLocation.start-feature.nonComplementaryExtent;}
-      else {feature.location.end=feature.complementaryLocation.end+feature.nonComplementaryExtent;}
-    }
+      else {feature.location.end=feature.complementaryLocation.end+feature.nonComplementaryExtent;}}
 
     var $header=$('<h3/>',{text: seq.name});
     var $div=$('<div/>',{class: 'tab_container', id: seq.name+"_container"});
@@ -73,7 +73,7 @@ var kineticSequence=(function() {
       alert(pasteData);
       evt.preventDefault();});
     containCanvas.on("save", function() {
-      savesequence(seq);
+      savesequence(seq,sequencePath);
     });
     containCanvas.on("mapoligos", function() {
       $.each($("#example").dataTable().fnGetData(), function(i, row) {
@@ -86,23 +86,37 @@ var kineticSequence=(function() {
           var reverseFoundIndex=dna.indexOf(reverseComplement);
           addFeature(reverseFoundIndex,row,complementarySequence,-1);}});
       initializeDisplay();});
+    containCanvas.on("saveprimers", function() {
+      var featuresWithSequence=[];
+      for (var i=0;i<newFeatures.length;i++) {
+        var feature=newFeatures[i];
+        featuresWithSequence.push({complementary: complementarySequence(feature,dna),
+          nonComplementary: nonComplementarySequence(feature,dna),
+          name: getLabel(feature)});}
+      saveoligos(featuresWithSequence,function() {
+        originalFeatures=originalFeatures.concat(newFeatures);
+        newFeatures=[];
+        initializeDisplay();
+      });
+    });
     containCanvas.on("createfeature", function() {
       if (selection.start==selection.end) {return;}
       var strand=1;
-      var feature={};
+      var feature={type: 'primer'};
       if(selection.end>selection.start) {
         feature.location={start: selection.start, end: selection.end, strand: 1};
-        feature.complementaryLocation={start: selection.start, end: selection.end};
-      }
+        feature.complementaryLocation={start: selection.start, end: selection.end};}
       else {
         feature.location={start: selection.end, end: selection.start, strand: -1};
-        feature.complementaryLocation={start: selection.end, end: selection.start};
-      }
+        feature.complementaryLocation={start: selection.end, end: selection.start};}
       feature.nonComplementaryExtent=0;
       feature.qualifiers={};
       feature.qualifiers.label=['test'];
-      features.push(feature);
+      newFeatures.push(feature);
       initializeDisplay();});
+    containCanvas.on("deletefeature", function(input,params) {
+      console.log(params);
+    });
 
     var fontWidth=computeFontWidth(featureLayer, fontSize, fontFamily);
 
@@ -125,6 +139,7 @@ var kineticSequence=(function() {
       var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
       lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
       lineStructure.lines=Math.ceil(dna.length/lineStructure.charactersPerLine);
+      var features=originalFeatures.concat(newFeatures);
 
       var runningTop=lineSeparation;
       lineStructure.lineList=[];
@@ -219,6 +234,7 @@ var kineticSequence=(function() {
           s.removeAllRanges();
           s.addRange(r);
         	if(event.which==1){
+            containCanvas.focus();
             selecting=true;
             selection.end=getBase(options.evt.offsetX,this);
       	    if(!options.evt.shiftKey) {selection.start=selection.end;}
@@ -253,13 +269,12 @@ var kineticSequence=(function() {
       var width=end-start;
       var nonComplementaryLocation={start: line.start, end: line.start};
       if (feature.nonComplementaryExtent) {
-        console.log(feature);
         nonComplementaryLocation={start: strand==1?(feature.complementaryLocation.start-feature.nonComplementaryExtent):feature.complementaryLocation.end,
           end: strand==1?feature.complementaryLocation.start:(feature.complementaryLocation.end+feature.nonComplementaryExtent)};
         console.log(nonComplementaryLocation);
       }
       var lineNonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
-      var lineNonComplementaryEnd=Math.min(nonComplementaryLocation.end, line.end)-line.start;
+      var lineNonComplementaryEnd=Math.min(Math.max(line.start,nonComplementaryLocation.end), line.end)-line.start;
       var nonComplementaryExtent=lineNonComplementaryEnd-lineNonComplementaryStart;
 
       var endCapWidth=10;
@@ -329,8 +344,26 @@ var kineticSequence=(function() {
       featureGroup.add(shape);
       featureGroup.add(nonComplementaryShape);
       var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
-      var text=new Kinetic.Text({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
+      var text=new Kinetic.EditableText({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
         fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
+      text.on('click', function(options) {
+        var $textarea=$('<textarea/>',{text: getLabel(feature), rows: 1});
+        var position=text.getAbsolutePosition();
+        $textarea.css({position: 'absolute', left: position.x, top: position.y, 'z-index': 1000, 'font-family': 'Times New Roman', 'font-size': fontSize});
+        containCanvas.children().first().append($textarea);
+        $textarea.focus();
+        options.cancelBubble=true;
+        $textarea.focusout(function() {
+          setLabel(feature,$textarea.val());
+          $textarea.remove();
+          initializeDisplay();});
+        $textarea.on('keypress', function(evt) {
+          if (evt.which==13) {
+            evt.preventDefault();
+            setLabel(feature,$textarea.val());
+            $textarea.remove();
+            initializeDisplay();}});
+      });
       textGroup.add(text);
       featureGroup.add(textGroup);
       tooltipLayer.add(tooltip);
@@ -357,6 +390,11 @@ var kineticSequence=(function() {
         var parentGroup=getParentGroup(this);
         var clickedBase=getBase(options.evt.offsetX,parentGroup);
         var selectFeatureOptions=[];
+        if (options.evt.ctrlKey) {
+          features.splice(feature.index);
+          initializeDisplay();
+          options.evt.preventDefault();
+          return;}
         if (options.evt.shiftKey) {
           var nonComplementaryStartOffset=Math.abs(clickedBase-nonComplementaryStart(feature));
           var nonComplementaryEndOffset=Math.abs(clickedBase-nonComplementaryEnd(feature));
@@ -379,7 +417,8 @@ var kineticSequence=(function() {
             shape.setFill('red');
             break;}}});
       featureGroup.mouseUpHandler=function() {
-        var indexFeature=features[feature.index];
+        //console.log(feature);
+        var indexFeature=feature;//originalFeatures[feature.index];
         console.log(featureGroup.selectionType);
 
         var newComplementaryLength=complementaryExtent(feature);
@@ -489,7 +528,7 @@ var kineticSequence=(function() {
           break;
           default: moved=false;}
         if(moved) {
-          e.preventDefault();
+          //e.preventDefault();
           if (!e.shiftKey) {selection.start=selection.end;}
           updateSelection();}}}
 
@@ -570,9 +609,13 @@ var kineticSequence=(function() {
     return width;}
   function getLabel(feature) {
     if (feature.qualifiers.label) {return feature.qualifiers.label[0];}
-    var keys=Object.keys(feature.qualifiers);
-    for (key in keys) {
+    for (key in feature.qualifiers) {
       if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
+    return "";}
+  function setLabel(feature,label) {
+    if (feature.qualifiers.label) {feature.qualifiers.label[0]=label;console.log(feature);return;}
+    for (key in feature.qualifiers) {
+      if (feature.qualifiers[key]) {feature.qualifiers[key][0]=label;return;}}
     return "";}
   function complementaryEnd(feature) {
     if (feature.location.strand==1) {return feature.complementaryLocation.end;}
@@ -587,6 +630,14 @@ var kineticSequence=(function() {
     return complementaryStart(feature);}
   function complementaryExtent(feature) {
     return Math.abs(feature.complementaryLocation.start-feature.complementaryLocation.end);}
+  function complementarySequence(feature,dna) {
+    var seq=dna.substring(feature.complementaryLocation.start,feature.complementaryLocation.end);
+    return feature.location.strand==1?seq:reverse(complement(seq));}
+  function nonComplementarySequence(feature,dna) {
+    var start=nonComplementaryStart(feature);
+    var end=nonComplementaryEnd(feature);
+    var seq=dna.substring(Math.min(start,end),Math.max(start,end));
+    return feature.location.strand==1?seq:reverse(complement(seq));}
   function updateFeature(feature,complementaryEnd,complementaryLength,nonComplementaryLength) {
     feature.nonComplementaryExtent=nonComplementaryLength;
     if (feature.location.strand==1) {

@@ -15,6 +15,7 @@ urlpatterns = patterns('',
                        url(r'^getsequence$', views.getsequence, name='getsequence'),
                        url(r'^savesequence$', views.savesequence, name='savesequence'),
                        url(r'^getlist$', views.getlist, name='getlist'),
+                       url(r'^augmentlist$', views.augmentlist, name='augmentlist'),
                        url(r'^registerdropbox$', views.registerdropbox, name='registerdropbox'),
 )
 

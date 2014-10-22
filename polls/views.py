@@ -14,6 +14,8 @@ import polls.SeqToJSON
 import dropbox
 from dropbox.client import DropboxOAuth2Flow
 from xlrd import open_workbook
+from openpyxl import load_workbook
+from openpyxl.writer.excel import save_virtual_workbook
 from ast import literal_eval
 import traceback
 
@@ -77,6 +79,40 @@ def get_dropbox_auth_flow(session):
 #	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://avimosher.webfactional.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 
+def augmentlist(request):
+	newsequences=request.POST['oligos']
+	sequence_list=json.loads(newsequences)
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		folder_metadata=client.metadata('/')
+		for obj in folder_metadata['contents']:
+			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+				absolute_path=obj['path']
+				f=client.get_file(absolute_path)
+				s=io.BytesIO(f.read())
+				book=load_workbook(filename=s)
+				for sheet in book:
+					row=2
+					index=0
+					while sheet.cell(row=row,column=1).value!=None:
+						index=sheet.cell(row=row,column=1).value
+						row+=1
+					for seq in sequence_list:
+						index+=1
+						sheet.cell(row=row,column=1).value=index
+						sheet.cell(row=row,column=2).value=seq['name']
+						sheet.cell(row=row,column=3).value=seq['nonComplementary']+seq['complementary']
+						sheet.cell(row=row,column=5).value=seq['nonComplementary']+seq['complementary']
+						sheet.cell(row=row,column=6).value=seq['nonComplementary']
+						sheet.cell(row=row,column=7).value=seq['complementary']
+						row+=1
+				client.put_file(absolute_path,save_virtual_workbook(book),overwrite=True)
+	except Exception as e:
+		print(str(e))
+		traceback.print_exc()
+		raise e
+	return HttpResponse("success", content_type='application/text')
+
 def getlist(request):
 	data=[]
 	try:
@@ -110,6 +146,8 @@ def getlist(request):
 			else:
 				data.append([obj['path'],obj['size'],'','',''])
 	except Exception as e:
+		print(str(e))
+		traceback.print_exc()
 		raise e
 	return HttpResponse(json.dumps(data),content_type='application/json')
 
@@ -129,24 +167,25 @@ def testjsplumb(request):
 
 def savesequence(request):
 	sequence_json=request.POST['sequence']
-	seq_handle=SeqIO.parse(io.StringIO(sequence_json),'json')
-	for index, record in enumerate(seq_handle):
-		try:
-			newseq=SeqRecord(Seq(str(record.seq),IUPAC.unambiguous_dna),id="testing")
+	sequence_name=request.POST['name']
+	print(sequence_name)
+	try:
+		seq_handle=SeqIO.parse(io.StringIO(sequence_json),'json')
+		for index, record in enumerate(seq_handle):
+			newseq=SeqRecord(Seq(str(record.seq),IUPAC.unambiguous_dna),id=record.id)
 			newseq.features=record.features
 			output=io.StringIO()
 			SeqIO.write(newseq, output, 'genbank')
-		except Exception as e:
-			print(str(e))
-			traceback.print_exc()
-			raise e
-		client=dropbox.client.DropboxClient(request.session['access_token'])
-		client.put_file("/testing.gb",output)
-	return HttpResponse('', content_type='application/json')
+	except Exception as e:
+		print(str(e))
+		traceback.print_exc()
+		raise e
+	client=dropbox.client.DropboxClient(request.session['access_token'])
+	client.put_file(sequence_name,output,overwrite=True)
+	return HttpResponse(sequence_json, content_type='application/json')
 
 def getsequence(request):
 	absolute_path=request.POST['name']
-
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		with client.get_file(absolute_path) as f:
@@ -164,5 +203,5 @@ def getsequence(request):
 
 	SeqIO.write(seq, output, "json")
 	jsonstring=output.getvalue()
-	# note: the
+	print(jsonstring)
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')

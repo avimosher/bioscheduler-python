@@ -11,7 +11,10 @@
   </script>
   <script src="{% static "tmcalc-support.js" %}"></script>
   <script src="{% static "kinetic.js" %}"></script>
+  <script src="{% static "kinetic.editable.js" %}"></script>
   <script src="{% static "kineticsequence.js" %}"></script>
+  <script src="{% static "fluidsGridModule.js" %}"></script>
+  <script src="{% static "numeric-1.2.6.js" %}"></script>
   <script src="{% static "jquery.min.js" %}"></script>
   <script src="{% static "datatables/js/jquery.dataTables.js" %}"></script>
   <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
@@ -27,6 +30,8 @@
   <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/jsplumb.css" %}"/>
   <script src="{% static "jsPlumb/package-demo.js" %}"></script>
   <script src="{% static "molarityCalculator.js" %}"></script>
+  <script src="{% static "jquery-terminal/jquery.terminal-0.8.8.min.js" %}"></script>
+  <link rel="stylesheet" type="text/css" href="{% static "jquery-terminal/jquery.terminal.css" %}"/>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -81,14 +86,14 @@
               // Does this cookie string begin with the name we want?
               if (cookie.substring(0, name.length + 1) == (name + '=')) {
                   cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;
-              }
-          }
-      }
-      return cookieValue;
+                  break;}}}
+      return cookieValue;}
+
+  function ls() {
+    console.log('ls');
   }
 
-  function savesequence(sequence){
+  function savesequence(sequence,name){
     var csrftoken = getCookie('csrftoken');
     $.ajax({
       url: 'savesequence',
@@ -96,22 +101,33 @@
       datatype: 'json',
       data: {
         sequence: JSON.stringify(sequence),
-        csrfmiddlewaretoken: '{{ csrf_token }}'
-      },
+        name: name,
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
       beforeSend: function(xhr) {
         xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-      },
-      success: function(seq) {
-        alert('sequence saved');
-      },
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: function(seq) {alert('sequence saved');},
       error: function(XMLHttpRequest,textStatus,errorThrown) {
-        alert("Status: " + textStatus); alert("Error: " + errorThrown);
-      }
-    });
-  }
-  $(document).ready(function() {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
 
+  function saveoligos(oligos, success) {
+    var csrftoken = getCookie('csrftoken');
+    $.ajax({
+      url: 'augmentlist',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        oligos: JSON.stringify(oligos),
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: success,
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
+  }
+
+  $(document).ready(function() {
     var csrftoken = getCookie('csrftoken');
 
     function loadsequence(sequencePath){
@@ -121,34 +137,24 @@
         datatype: 'json',
         data: {
           name: sequencePath,
-          csrfmiddlewaretoken: '{{ csrf_token }}'
-        },
+          csrfmiddlewaretoken: '{{ csrf_token }}'},
         beforeSend: function(xhr) {
           xhr.setRequestHeader("Accept", "application/json");
-          xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        },
-        success: function(seq) {
-          kineticSequence.sequenceEditor(seq);
-        },
+          xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+        success: function(seq) {kineticSequence.sequenceEditor(seq,sequencePath);},
         error: function(XMLHttpRequest,textStatus,errorThrown) {
-          alert("Status: " + textStatus); alert("Error: " + errorThrown);
-        }
-      });
-    }
+          alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
 
     $.ajax({
       url: "getlist",
       type: "POST",
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },          
+        'Content-Type': 'application/json'},          
       beforeSend: function(xhr) {
         xhr.setRequestHeader("Accept", "application/json");
         xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);
-      },
-      
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
       success: function(seqList) {
         $('#demo').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
         $('#example').dataTable( {
@@ -164,76 +170,61 @@
           { "targets": [3], "visible": false},
           { "targets": [4], "visible": false},
           ],
-          "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}
-        });
+          "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}});
         $('#example tbody').on('dblclick', 'tr', function() {
           var name=$('td',this).eq(0).text(); // this is how the datatables demo does it, sadly
-          loadsequence(name);
-        });
+          loadsequence(name);});
         $('#example > tbody > tr').draggable({
           //containment: "#outer",
           helper: function(event) {
             var _this=$(this);
             var name=$('td',this).eq(0).text();
             var new_ele=$('<div class="inventoryItem">'+name+'</div>');
-            return new_ele.clone();
-          },
-          appendTo: 'body'
-        });
-      }
-    });
+            return new_ele.clone();},
+          appendTo: 'body'});}});
 
-    $('#dropboxform').submit(function(e) {
-      var formURL=$(this).attr("action");
-      $.ajax({
-        url: formURL,
-        type: "POST",
-        data: {key: $('#dropboxkey').val()},
-        traditional: true,
-        dataType: 'html',
-        beforeSend: function(xhr) {
-          xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        },
-        success: function() {
-        }      
-      });
-      e.preventDefault();
-    });
-
-    var icons={
-      header: "ui-icon-close"
-    };
-
+    var icons={header: "ui-icon-close"};
     $('#accordion').accordion({
       heightStyle: "fill",
       collapsible: true,
-      icons: icons
-    });
+      icons: icons});
 
     $.contextMenu({
       selector: ".contain_canvas",
-      callback: function(key, options) {
-        console.log(key);
-        console.log(options);
-        var m="clicked: "+key;
-        if (key=='map') {
-          options.$trigger.trigger("mapoligos");
-        }
-        else if (key=='createfeature') {
-          options.$trigger.trigger("createfeature");
-        }
-        else if (key=='save') {
-          options.$trigger.trigger("save");
-        }
-      },
-      items: {
-        "map": {name: "Map Oligos", icon: "edit"},
-        "createfeature": {name: "Create Feature", icon: "cut"},
-        "save": {name: "Save", icon: "save"},
-        "sep1": "---------",
-        "quit": {name: "Quit", icon: "quit"}
-      }
-    });
+      build: function($trigger,e) {
+        return {
+          callback: function(key, options) {
+            console.log(key);
+            console.log(this);
+            console.log(e);
+            if (key=='map') {options.$trigger.trigger("mapoligos");}
+            else if (key=='saveprimers') {options.$trigger.trigger("saveprimers");}
+            else if (key=='createfeature') {options.$trigger.trigger("createfeature");}
+            else if (key=='deletefeature') {options.$trigger.trigger("deletefeature",e);}
+            else if (key=='save') {options.$trigger.trigger("save");}
+          },
+          items: {
+            "map": {name: "Map Oligos", icon: "edit"},
+            "saveprimers": {name: "Save Primers", icon: "edit"},
+            "createfeature": {name: "Create Feature", icon: "cut"},
+            "deletefeature": {name: "Delete Feature", icon: "cut"},
+            "save": {name: "Save", icon: "save"},
+            "sep1": "---------",
+            "quit": {name: "Quit", icon: "quit"}}}}});
+
+    /*$("#terminal").terminal(function(command, term) {
+      if (command!=='') {
+        try {
+          var result=window.eval(command);
+          if (result !== undefined) {term.echo(new String(result));}
+        } catch (e) {term.error(new String(e));}
+      } else {term.echo('');}
+    }, {
+      greetings: 'Javascript Interpreter',
+      name: 'bioscheduler_terminal',
+      height: 200,
+      prompt: 'bs> '
+    });*/
   });
 
 
@@ -244,8 +235,9 @@
   <div id="bioscheduler_header" style="background-color:#FFA500;">
     <h1 style="margin-bottom:0;">
       Bioscheduler
-      <img id="testMenu" src="{% static "icons/graph_32x32.png" %}" onclick="jsPlumbDemo();" />
+      <img id="testMenu" src="{% static "icons/graph32.svg" %}" width="32" height="32" onclick="jsPlumbDemo();" />
       <img id="molarityCalculatorMenu" src="{% static "icons/education32.svg" %}" onclick="molarityCalculator();" />
+      <img id="fluidsGridMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="fluidsGridModule.fluidsGrid();" />
     </h1>
   </div>
   <!--  <div>Icons made by Freepik from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>         is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div> -->
@@ -259,5 +251,6 @@
     </div>
   </div>
 </div>
+<div id="terminal"/>
 </body>
 </html>

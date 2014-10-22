@@ -14,6 +14,8 @@ def convert_from_features(features):
         for feature in features:
             location=feature.pop('location', '')
             feature.pop('index','')
+            feature.pop('complementaryLocation','')
+            feature.pop('nonComplementaryExtent','')
             seqFeatures.append(SeqFeature(location=FeatureLocation(**location),**feature))
     except Exception as e:
         print(str(e))
