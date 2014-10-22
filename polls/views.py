@@ -168,7 +168,6 @@ def testjsplumb(request):
 def savesequence(request):
 	sequence_json=request.POST['sequence']
 	sequence_name=request.POST['name']
-	print(sequence_name)
 	try:
 		seq_handle=SeqIO.parse(io.StringIO(sequence_json),'json')
 		for index, record in enumerate(seq_handle):
@@ -183,6 +182,18 @@ def savesequence(request):
 	client=dropbox.client.DropboxClient(request.session['access_token'])
 	client.put_file(sequence_name,output,overwrite=True)
 	return HttpResponse(sequence_json, content_type='application/json')
+
+def deletesequence(request):
+	sequence_path=request.POST['path']
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		client.file_delete(sequence_path)
+	except Exception as e:
+		print(str(e))
+		traceback.print_exc()
+		raise e
+	return HttpResponse("success", content_type='application/html')
+
 
 def getsequence(request):
 	absolute_path=request.POST['name']

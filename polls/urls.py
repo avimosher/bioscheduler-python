@@ -14,8 +14,9 @@ urlpatterns = patterns('',
                        url(r'^testjsplumb.html$', views.testjsplumb, name='testjsplumb'),
                        url(r'^getsequence$', views.getsequence, name='getsequence'),
                        url(r'^savesequence$', views.savesequence, name='savesequence'),
+                       url(r'^deletesequence$', views.deletesequence, name='deletesequence'),
                        url(r'^getlist$', views.getlist, name='getlist'),
-                       url(r'^augmentlist$', views.augmentlist, name='augmentlist'),
+                       url(r'^augmentlist$', views.augmentlist, name='augment list'),
                        url(r'^registerdropbox$', views.registerdropbox, name='registerdropbox'),
 )
 

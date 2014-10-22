@@ -69,8 +69,20 @@ var kineticSequence=(function() {
       evt.originalEvent.clipboardData.setData("Text", copyData);
       evt.preventDefault();});
     outerContainer.on('paste', function(evt) {
-      var pasteData=evt.originalEvent.clipboardData.getData("Text");
-      alert(pasteData);
+      var pasteData=evt.originalEvent.clipboardData.getData("Text").toUpperCase().replace(/\s+/g,'');
+      var forwardIndex=dna.indexOf(pasteData);
+      if (forwardIndex>-1) {
+        selection.start=forwardIndex;
+        selection.end=forwardIndex+pasteData.length;
+      }
+      else {
+        var reverseIndex=dna.indexOf(reverse(complement(pasteData)));
+        if (reverseIndex>-1) {
+          selection.end=reverseIndex;
+          selection.start=reverseIndex+pasteData.length;
+        }
+      }
+      updateSelection();
       evt.preventDefault();});
     containCanvas.on("save", function() {
       savesequence(seq,sequencePath);

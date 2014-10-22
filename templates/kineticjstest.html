@@ -192,6 +192,33 @@
       icons: icons});
 
     $.contextMenu({
+      selector: ".inventoryItem",
+      items: {
+        "delete": {name: "Delete", icon: "delete"}
+      },
+      callback: function(key,options) {
+        var row=options.$trigger;
+        var path=row.context.cells[0].textContent;
+        console.log(options.$trigger.context.cells[0].textContent);
+        $.ajax({
+          url: 'deletesequence',
+          type: 'POST',
+          datatype: 'json',
+          data: {
+            path: path,
+            csrfmiddlewaretoken: '{{ csrf_token }}'},
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+          success: function(seq) {
+            $("#example").DataTable().row(row).remove().draw();
+          },
+          error: function(XMLHttpRequest,textStatus,errorThrown) {
+            alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
+      }
+    });
+
+    $.contextMenu({
       selector: ".contain_canvas",
       build: function($trigger,e) {
         return {
