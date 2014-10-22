@@ -194,9 +194,6 @@
       build: function($trigger,e) {
         return {
           callback: function(key, options) {
-            console.log(key);
-            console.log(this);
-            console.log(e);
             if (key=='map') {options.$trigger.trigger("mapoligos");}
             else if (key=='saveprimers') {options.$trigger.trigger("saveprimers");}
             else if (key=='createfeature') {options.$trigger.trigger("createfeature");}
@@ -205,7 +202,7 @@
           },
           items: {
             "map": {name: "Map Oligos", icon: "edit"},
-            "saveprimers": {name: "Save Primers", icon: "edit"},
+            "saveprimers": {name: "Save Primers", icon: "edit2"},
             "createfeature": {name: "Create Feature", icon: "cut"},
             "deletefeature": {name: "Delete Feature", icon: "cut"},
             "save": {name: "Save", icon: "save"},

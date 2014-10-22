@@ -135,8 +135,8 @@ def getlist(request):
 						if sheet.cell_type(current_row,name_column)!=text_entry:
 							break
 						name=sheet.cell_value(current_row,name_column)
-						sequence_column=4
-						sequence=sheet.cell_value(current_row,sequence_column)
+						sequence_column=2
+						sequence=sheet.cell_value(current_row,sequence_column).replace(" ","")
 						extension_column=5
 						extension=sheet.cell_value(current_row,extension_column)
 						complementary_column=6

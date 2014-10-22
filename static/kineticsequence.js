@@ -62,7 +62,7 @@ var kineticSequence=(function() {
       feature.featureFill='lime';
       feature.qualifiers={};
       feature.qualifiers.label=[row[0]];
-      features.push(feature);}
+      originalFeatures.push(feature);}
 
     outerContainer.on('copy', function(evt) {
       var copyData=dna.substring(selection.start,selection.end);
