@@ -72,19 +72,14 @@ var kineticSequence=(function() {
         return true;}
 
       if (feature.complementaryLocation.start<=start && feature.complementaryLocation.end>=end) {
-        feature.complementaryLocation.end+=replacementLength-(end-start);
-      }
+        feature.complementaryLocation.end+=replacementLength-(end-start);}
       else if (feature.complementaryLocation.start<=start && feature.complementaryLocation.end<=end) {
-        feature.complementaryLocation.end=start;
-      }
+        feature.complementaryLocation.end=start;}
       else if (feature.complementaryLocation.start>=start && feature.complementaryLocation.end>=end) {
         feature.complementaryLocation.start=start+replacementLength;
-        feature.complementaryLocation.end+=replacementLength-(end-start);
-      }
+        feature.complementaryLocation.end+=replacementLength-(end-start);}
       rectifyFeature(feature);
-      return true;
-    }
-
+      return true;}
     function paste(text) {
       // replace the selection
       var sortedStart=Math.min(selection.start,selection.end);
@@ -98,15 +93,11 @@ var kineticSequence=(function() {
         console.log('rectifying');
         if(!adjustFeature(feature,sortedStart,sortedEnd,text.length)) {
           originalFeatures.slice(i);
-          i--;
-        }
-        console.log(feature);
-      }
+          i--;}}
       initializeDisplay();
       selection.start=sortedStart;
       selection.end=selection.start+text.length;
-      updateSelection();
-    }
+      updateSelection();}
     outerContainer.on('copy', function(evt) {
       var copyData=dna.substring(selection.start,selection.end);
       evt.originalEvent.clipboardData.setData("Text", copyData);
@@ -128,9 +119,7 @@ var kineticSequence=(function() {
       }
       updateSelection();*/
       evt.preventDefault();});
-    containCanvas.on("save", function() {
-      savesequence(seq,sequencePath);
-    });
+    containCanvas.on("save", function() {savesequence(seq,sequencePath);});
     containCanvas.on("mapoligos", function() {
       $.each($("#example").dataTable().fnGetData(), function(i, row) {
         if (row[2]) {
@@ -153,8 +142,7 @@ var kineticSequence=(function() {
         originalFeatures=originalFeatures.concat(newFeatures);
         newFeatures=[];
         initializeDisplay();
-      });
-    });
+      });});
     containCanvas.on("createfeature", function() {
       if (selection.start==selection.end) {return;}
       var strand=1;
@@ -204,7 +192,8 @@ var kineticSequence=(function() {
         var end=Math.min(dna.length,(i+1)*lineStructure.charactersPerLine);
         var subtext=dna.substring(start,end);
         var text=new Kinetic.Text({text: subtext, x: 0, top: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'black'});
-        var groupSelection = new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+        var groupSelection=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+        var groupTranslation=new Kinetic.Text({text: "", x: 0, y: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'blue'});
 
         var group=new Kinetic.Group({x: leftMargin, y: runningTop});
         group.groupType='parent';
@@ -212,7 +201,9 @@ var kineticSequence=(function() {
         group.end=end;
         group.features=[];
         groupSelection.name='selection';
+        group.translation=groupTranslation;
         group.add(groupSelection);
+        group.add(groupTranslation);
         group.add(text);
 
         lineStructure.lineList[i]=group;
@@ -266,6 +257,7 @@ var kineticSequence=(function() {
               currentCount--;
               active[rangeEvents[j].lineFeature.displayIndex]=false;
               break;}}
+        line.translation.position({y: groupHeight(line), x: 0});
         line.totalHeight=groupHeight(line)+lineSeparation;
         runningHeight+=line.totalHeight;
         var backgroundRect=new Kinetic.Rect({x: 0, y: 0, width: groupWidth(line), height: line.totalHeight, opacity: .1, fill: 'grey'});
@@ -326,8 +318,7 @@ var kineticSequence=(function() {
       var nonComplementaryLocation={start: line.start, end: line.start};
       if (feature.nonComplementaryExtent) {
         nonComplementaryLocation={start: strand==1?(feature.complementaryLocation.start-feature.nonComplementaryExtent):feature.complementaryLocation.end,
-          end: strand==1?feature.complementaryLocation.start:(feature.complementaryLocation.end+feature.nonComplementaryExtent)};
-        console.log(nonComplementaryLocation);}
+          end: strand==1?feature.complementaryLocation.start:(feature.complementaryLocation.end+feature.nonComplementaryExtent)};}
       var lineNonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
       var lineNonComplementaryEnd=Math.min(Math.max(line.start,nonComplementaryLocation.end), line.end)-line.start;
       var nonComplementaryExtent=lineNonComplementaryEnd-lineNonComplementaryStart;
@@ -401,7 +392,7 @@ var kineticSequence=(function() {
       var textGroup=new Kinetic.Group({x: 0, y: 0, clip: {x: 0, y: -1, width: 1000, height: fontSize+4}});
       var text=new Kinetic.EditableText({text: getLabel(feature), x: leftCapOffset, y: 2, width: width*fontWidth-endCapWidth, fontSize: fontSize,
         fontFamily: 'Times New Roman', fill: 'black', align: 'center'});
-      text.on('click', function(options) {
+      text.on('dblclick', function(options) {
         var $textarea=$('<textarea/>',{text: getLabel(feature), rows: 1});
         var position=text.getAbsolutePosition();
         $textarea.css({position: 'absolute', left: position.x, top: position.y, 'z-index': 1000, 'font-family': 'Times New Roman', 'font-size': fontSize});
@@ -417,8 +408,7 @@ var kineticSequence=(function() {
             evt.preventDefault();
             setLabel(feature,$textarea.val());
             $textarea.remove();
-            initializeDisplay();}});
-      });
+            initializeDisplay();}});});
       textGroup.add(text);
       featureGroup.add(textGroup);
       tooltipLayer.add(tooltip);
@@ -440,7 +430,7 @@ var kineticSequence=(function() {
           selection.start=complementaryStart(feature);
           selection.end=complementaryEnd(feature);}
         updateSelection();}
-      featureGroup.on('dblclick', function(evt) {this.selectFeature();});
+      featureGroup.on('click', function(evt) {this.selectFeature();});
       featureGroup.on('mousedown', function(options) {
         var parentGroup=getParentGroup(this);
         var clickedBase=getBase(options.evt.offsetX,parentGroup);
@@ -522,7 +512,6 @@ var kineticSequence=(function() {
         tooltipLayer.draw();});
       return featureGroup;}
 
-
     function lineAtBase(base) {return Math.floor(base/lineStructure.charactersPerLine);}
     function groupAtBase(base) {return lineStructure.lineList[lineAtBase(base)];}
     function getBase(X,reference) {return reference.start+Math.floor((X-reference.position().x)/fontWidth);}
@@ -537,12 +526,17 @@ var kineticSequence=(function() {
         if (group.start>sortedEnd || group.end<sortedStart) {
           groupSelection.position({x: 0, y: 0});
           groupSelection.setWidth(0);
+          group.translation.setText("");
           continue;}
         var lineLeft=Math.max(0,sortedStart-group.start);
         var lineRight=Math.min(group.end-group.start,sortedEnd-group.start);
         groupSelection.position({x: lineLeft*fontWidth,y: 0});
         groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
-        groupSelection.setHeight(group.totalHeight);}
+        groupSelection.setHeight(group.totalHeight);
+        group.translation.position({x: lineLeft*fontWidth});
+        var lineText=dna.substring(Math.max(sortedStart,group.start),Math.min(sortedEnd,group.end));
+        group.translation.setText(translate(lineText));
+      }
       var cursorGroup=groupAtBase(selection.end);
       cursorGroup.add(cursor);
       cursor.position({x: (selection.end-cursorGroup.start)*fontWidth, y: 0});
@@ -639,14 +633,12 @@ var kineticSequence=(function() {
     return t1;};
 
   function groupHeight(group) {
-    if (group.getChildren === 'undefined'){
-      return group.getHeight();
-    }
+    if (group.getChildren==='undefined' || group.getChildren().length==0){
+      return group.getHeight();}
     var children=group.getChildren();
     var height=0;
     for(var gi=0;gi<children.length;gi++){
-      height=Math.max(height,children[gi].position().y+children[gi].getHeight());//groupHeight(children[i]));
-    }
+      height=Math.max(height,children[gi].position().y+groupHeight(children[gi]));}
     return height;}
   function groupWidth(group) {
     if (group.getChildren === 'undefined'){
@@ -664,7 +656,7 @@ var kineticSequence=(function() {
       if (feature.qualifiers[key]) {return feature.qualifiers[key][0];}}
     return "";}
   function setLabel(feature,label) {
-    if (feature.qualifiers.label) {feature.qualifiers.label[0]=label;console.log(feature);return;}
+    if (feature.qualifiers.label) {feature.qualifiers.label[0]=label;return;}
     for (key in feature.qualifiers) {
       if (feature.qualifiers[key]) {feature.qualifiers[key][0]=label;return;}}
     return "";}
@@ -723,9 +715,41 @@ var kineticSequence=(function() {
   function getParentGroup(obj) {
     while (obj) {
       if (obj.groupType=='parent') {return obj;}
-      obj=obj.getParent();
-    }
-    return null;
+      obj=obj.getParent();}
+    return null;}
+  function translate(seq) {
+    var dnaSequence=seq.toLowerCase();
+    var code=getGeneticCodeString("standard").split(/,/);
+    var matchExp=getGeneticCodeMatchExp(code);
+    var matchResult=getGeneticCodeMatchResult(code);
+    dnaSequence=dnaSequence.replace(/(...)/g,function (str, p1, offset, s) {return " "+p1+" ";});
+    for (var i=0;i<matchExp.length;i++) {
+      dnaSequence=dnaSequence.replace(matchExp[i],matchResult[i]);}
+    return dnaSequence;
   }
+  function geneticCode() {
+    return "/gc[acgturyswkmbdhvn]/=A," +
+    "/[tu]g[ctuy]/=C," +
+    "/ga[tcuy]/=D," +
+    "/ga[agr]/=E," +
+    "/[tu][tu][tcuy]/=F," +
+    "/gg[acgturyswkmbdhvn]/=G," +
+    "/ca[tcuy]/=H," +
+    "/a[tu][atcuwmhy]/=I," +
+    "/aa[agr]/=K," +
+    "/c[tu][acgturyswkmbdhvn]|[tu][tu][agr]|[ctuy][tu][agr]/=L," +
+    "/a[tu]g/=M," +
+    "/aa[tucy]/=N," +
+    "/cc[acgturyswkmbdhvn]/=P," +
+    "/ca[agr]/=Q," +
+    "/cg[acgturyswkmbdhvn]|ag[agr]|[cam]g[agr]/=R," +
+    "/[tu]c[acgturyswkmbdhvn]|ag[ct]/=S," +
+    "/ac[acgturyswkmbdhvn]/=T," +
+    "/g[tu][acgturyswkmbdhvn]/=V," +
+    "/[tu]gg/=W," +
+    "/[tu]a[ctuy]/=Y," +
+    "/[tu]a[agr]|[tu]ga|[tu][agr]a/=*";
+  }
+
   return module;
 }());
