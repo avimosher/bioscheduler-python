@@ -64,13 +64,57 @@ var kineticSequence=(function() {
       feature.qualifiers.label=[row[0]];
       originalFeatures.push(feature);}
 
+    function adjustFeature(feature,start,end,replacementLength) {
+      if (feature.location.start>=start && feature.location.end<=end) {return false;}
+      if (feature.location.start<=start && feature.location.end<=start) {return true;}
+      if (feature.location.start>=end && feature.location.end>=end) {
+        updateFeature(feature,complementaryEnd(feature)+replacementLength-(end-start),complementaryExtent(feature),nonComplementaryExtent(feature));
+        return true;}
+
+      if (feature.complementaryLocation.start<=start && feature.complementaryLocation.end>=end) {
+        feature.complementaryLocation.end+=replacementLength-(end-start);
+      }
+      else if (feature.complementaryLocation.start<=start && feature.complementaryLocation.end<=end) {
+        feature.complementaryLocation.end=start;
+      }
+      else if (feature.complementaryLocation.start>=start && feature.complementaryLocation.end>=end) {
+        feature.complementaryLocation.start=start+replacementLength;
+        feature.complementaryLocation.end+=replacementLength-(end-start);
+      }
+      rectifyFeature(feature);
+      return true;
+    }
+
+    function paste(text) {
+      // replace the selection
+      var sortedStart=Math.min(selection.start,selection.end);
+      var sortedEnd=Math.max(selection.start,selection.end);
+      var before=dna.substring(0,sortedStart);
+      var after=dna.substring(sortedEnd,dna.length)
+      dna=before+text+after;
+      // fix features
+      for (var i=0;i<originalFeatures.length;i++) {
+        feature=originalFeatures[i];
+        console.log('rectifying');
+        if(!adjustFeature(feature,sortedStart,sortedEnd,text.length)) {
+          originalFeatures.slice(i);
+          i--;
+        }
+        console.log(feature);
+      }
+      initializeDisplay();
+      selection.start=sortedStart;
+      selection.end=selection.start+text.length;
+      updateSelection();
+    }
     outerContainer.on('copy', function(evt) {
       var copyData=dna.substring(selection.start,selection.end);
       evt.originalEvent.clipboardData.setData("Text", copyData);
       evt.preventDefault();});
     outerContainer.on('paste', function(evt) {
       var pasteData=evt.originalEvent.clipboardData.getData("Text").toUpperCase().replace(/\s+/g,'');
-      var forwardIndex=dna.indexOf(pasteData);
+      paste(pasteData);
+      /*var forwardIndex=dna.indexOf(pasteData);
       if (forwardIndex>-1) {
         selection.start=forwardIndex;
         selection.end=forwardIndex+pasteData.length;
@@ -82,7 +126,7 @@ var kineticSequence=(function() {
           selection.start=reverseIndex+pasteData.length;
         }
       }
-      updateSelection();
+      updateSelection();*/
       evt.preventDefault();});
     containCanvas.on("save", function() {
       savesequence(seq,sequencePath);
@@ -283,8 +327,7 @@ var kineticSequence=(function() {
       if (feature.nonComplementaryExtent) {
         nonComplementaryLocation={start: strand==1?(feature.complementaryLocation.start-feature.nonComplementaryExtent):feature.complementaryLocation.end,
           end: strand==1?feature.complementaryLocation.start:(feature.complementaryLocation.end+feature.nonComplementaryExtent)};
-        console.log(nonComplementaryLocation);
-      }
+        console.log(nonComplementaryLocation);}
       var lineNonComplementaryStart=Math.max(nonComplementaryLocation.start, line.start)-line.start;
       var lineNonComplementaryEnd=Math.min(Math.max(line.start,nonComplementaryLocation.end), line.end)-line.start;
       var nonComplementaryExtent=lineNonComplementaryEnd-lineNonComplementaryStart;
@@ -403,7 +446,7 @@ var kineticSequence=(function() {
         var clickedBase=getBase(options.evt.offsetX,parentGroup);
         var selectFeatureOptions=[];
         if (options.evt.ctrlKey) {
-          features.splice(feature.index);
+          originalFeatures.splice(feature.index);
           initializeDisplay();
           options.evt.preventDefault();
           return;}
@@ -429,10 +472,7 @@ var kineticSequence=(function() {
             shape.setFill('red');
             break;}}});
       featureGroup.mouseUpHandler=function() {
-        //console.log(feature);
-        var indexFeature=feature;//originalFeatures[feature.index];
-        console.log(featureGroup.selectionType);
-
+        var indexFeature=feature;
         var newComplementaryLength=complementaryExtent(feature);
         var newComplementaryEnd=complementaryEnd(feature);
         var newNonComplementaryLength=indexFeature.nonComplementaryExtent;
@@ -462,8 +502,7 @@ var kineticSequence=(function() {
           var centerOffset=Math.abs(base-feature.nonComplementaryLocation.end);
           if (typeof centerOffset != 'undefined' && centerOffset<baseThreshold) {
             return true;}}
-        return false;
-      }
+        return false;}
       featureGroup.on('mousemove', function(options) {
         var evt=options.evt;
         var cursorType='default';
@@ -642,6 +681,8 @@ var kineticSequence=(function() {
     return complementaryStart(feature);}
   function complementaryExtent(feature) {
     return Math.abs(feature.complementaryLocation.start-feature.complementaryLocation.end);}
+  function nonComplementaryExtent(feature) {
+    return feature.nonComplementaryExtent;}
   function complementarySequence(feature,dna) {
     var seq=dna.substring(feature.complementaryLocation.start,feature.complementaryLocation.end);
     return feature.location.strand==1?seq:reverse(complement(seq));}
@@ -662,6 +703,16 @@ var kineticSequence=(function() {
       feature.complementaryLocation.end=complementaryEnd+complementaryLength;          
       feature.location.start=complementaryEnd;
       feature.location.end=complementaryEnd+complementaryLength+nonComplementaryLength;}}
+  function rectifyFeature(feature) {
+    var complementaryEnde=complementaryEnd(feature);
+    var complementaryLength=complementaryExtent(feature);
+    var nonComplementaryLength=nonComplementaryExtent(feature);
+    if (feature.location.strand==1) {
+      feature.location.end=complementaryEnde;
+      feature.location.start=complementaryEnde-complementaryLength-nonComplementaryLength;}
+    else {
+      feature.location.start=complementaryEnde;
+      feature.location.end=complementaryEnde+complementaryLength+nonComplementaryLength;}}
   function computeFontWidth(layer, fontSize, fontFamily) {
     var testString="AGCT";
     var text=new Kinetic.Text({text: testString, x: -100,y: -100, fontSize: fontSize, fontFamily: fontFamily});
