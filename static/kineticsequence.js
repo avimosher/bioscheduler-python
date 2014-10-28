@@ -26,6 +26,21 @@ var kineticSequence=(function() {
     var $div=$('<div/>',{class: 'tab_container', id: seq.name+"_container"});
     var outerContainer=$('<p/>',{id: seq.name+"_tm", text: "Tm: "});
     outerContainer.appendTo($div);
+    var findBox=$('<input/>',{id: seq.name+"_find"});
+    findBox.appendTo($div);
+    findBox.on('input',function(evt) {
+      var pasteData=findBox.val().toUpperCase().replace(/\s+/g,'');
+      var forwardIndex=dna.indexOf(pasteData);
+      if (forwardIndex>-1) {
+        selection.start=forwardIndex;
+        selection.end=forwardIndex+pasteData.length;}
+      else {
+        var reverseIndex=dna.indexOf(reverse(complement(pasteData)));
+        if (reverseIndex>-1) {
+          selection.end=reverseIndex;
+          selection.start=reverseIndex+pasteData.length;}}
+      updateSelection();
+    });
     $('<br>').appendTo($div);
     var containCanvas=$('<div/>',{class: 'contain_canvas',id: seq.name});
     containCanvas.appendTo($div);
@@ -119,7 +134,11 @@ var kineticSequence=(function() {
       }
       updateSelection();*/
       evt.preventDefault();});
-    containCanvas.on("save", function() {savesequence(seq,sequencePath);});
+    containCanvas.on("save", function() {
+      originalFeatures=originalFeatures.concat(newFeatures);
+      newFeatures=[];
+      var sequence={seq: dna, features: originalFeatures, name: seq.name};
+      savesequence(sequence,sequencePath);});
     containCanvas.on("mapoligos", function() {
       $.each($("#example").dataTable().fnGetData(), function(i, row) {
         if (row[2]) {
@@ -534,8 +553,10 @@ var kineticSequence=(function() {
         groupSelection.setWidth((lineRight-lineLeft)*fontWidth);
         groupSelection.setHeight(group.totalHeight);
         group.translation.position({x: lineLeft*fontWidth});
-        var lineText=dna.substring(Math.max(sortedStart,group.start),Math.min(sortedEnd,group.end));
-        group.translation.setText(translate(lineText));
+        var startOffset=(Math.max(sortedStart,group.start)-sortedStart)%3;
+        //var endOffset=(Math.min(sortedEnd,group.end)-sortedStart)%3;
+        var lineText=dna.substring(Math.max(sortedStart,group.start)-startOffset,Math.min(sortedEnd,group.end)+3);
+        group.translation.setText(translate(lineText).substring(startOffset,lineText.length-3));
       }
       var cursorGroup=groupAtBase(selection.end);
       cursorGroup.add(cursor);

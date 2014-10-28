@@ -33,6 +33,8 @@
   <script src="{% static "molarityCalculator.js" %}"></script>
   <script src="{% static "jquery-terminal/jquery.terminal-0.8.8.min.js" %}"></script>
   <link rel="stylesheet" type="text/css" href="{% static "jquery-terminal/jquery.terminal.css" %}"/>
+  <script src="{% static "Babylon/babylon.1.14.js" %}"></script>
+  <script src="{% static "locationsModule.js" %}"></script>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -265,6 +267,7 @@
       <img id="testMenu" src="{% static "icons/graph32.svg" %}" width="32" height="32" onclick="jsPlumbDemo();" />
       <img id="molarityCalculatorMenu" src="{% static "icons/education32.svg" %}" onclick="molarityCalculator();" />
       <img id="fluidsGridMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="fluidsGridModule.fluidsGrid();" />
+      <img id="locationsMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="locationsModule.locations();" />
     </h1>
   </div>
   <!--  <div>Icons made by Freepik from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>         is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div> -->
