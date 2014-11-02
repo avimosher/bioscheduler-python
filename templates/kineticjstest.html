@@ -34,6 +34,10 @@
   <script src="{% static "jquery-terminal/jquery.terminal-0.8.8.min.js" %}"></script>
   <link rel="stylesheet" type="text/css" href="{% static "jquery-terminal/jquery.terminal.css" %}"/>
   <script src="{% static "Babylon/babylon.1.14.js" %}"></script>
+  <script src="{% static "tween.min.js" %}"></script>
+  <script src="{% static "three.min.js" %}"></script>
+  <script src="{% static "three/OrbitControls.js" %}"></script>
+  <script src="{% static "three/CombinedCamera.js" %}"></script>
   <script src="{% static "locationsModule.js" %}"></script>
   <style>
   body {margin: 0px;}
@@ -50,6 +54,9 @@
     width: 100%;
     height: 100%;
     position: relative;
+  }
+  .locations {
+    position: absolute;
   }
   .contain_canvas {
       width: 95%;
