@@ -17,8 +17,8 @@ TEMPLATE_DIRS = (
 )
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-#STATIC_ROOT = '/home/avimosher/webapps/bioscheduler_static/'
-STATIC_ROOT = ''
+STATIC_ROOT = '/home/avimosher/webapps/bioscheduler_static/'
+#STATIC_ROOT = ''
 STATIC_URL = '/media/'
 
 STATICFILES_DIRS = (
@@ -72,8 +72,8 @@ ADMINS = (('Avi Robinson-Mosher', 'avi.mosher@gmail.com'))
 
 DATABASES = {
     'default': {
-        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        #'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'bioscheduler',
         'USER': 'avimosher',
         'PASSWORD': 'WTFdon\'tshowthat'

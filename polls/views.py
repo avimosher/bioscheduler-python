@@ -37,8 +37,11 @@ def registerdropbox(request):
 	flow=get_dropbox_auth_flow(request.session)
 	copyget=request.GET.copy()
 	getdict=request.session
-	# this converts the item in the URL to the string representation of its byte array
-	copyget.__setitem__('state',literal_eval(copyget['state']))
+	# this converts the item in the URL to the string representation of its byte array.  It either works or errors and isn't necessary
+	try:
+		copyget.__setitem__('state',literal_eval(copyget['state']))
+	except:
+		pass
 	# this does the same for the item in the session
 	getdict['dropbox-auth-csrf-token']=getdict['dropbox-auth-csrf-token'].decode(encoding="UTF-8")
 	try:
@@ -76,8 +79,8 @@ def simpletest(request):
 def get_dropbox_auth_flow(session):
 	app_key='p7b7j5v29v38bnk'
 	app_secret='q83heifozbsktdy'
-#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://avimosher.webfactional.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
-	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://bioscheduler.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 
 def augmentlist(request):
 	newsequences=request.POST['oligos']
