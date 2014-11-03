@@ -38,7 +38,9 @@
   <script src="{% static "three.min.js" %}"></script>
   <script src="{% static "three/OrbitControls.js" %}"></script>
   <script src="{% static "three/CombinedCamera.js" %}"></script>
+  <script src="{% static "three/threex.dynamictexture.js" %}"></script>
   <script src="{% static "locationsModule.js" %}"></script>
+  <script src="{% static "itemDisplay.js" %}"></script>
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -105,6 +107,82 @@
     console.log('ls');
   }
 
+  var objectloaders={};
+  objectloaders.loadsequence=function (sequencePath){
+    $.ajax({
+      url: 'getsequence',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        name: sequencePath,
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: function(seq) {kineticSequence.sequenceEditor(seq,sequencePath);},
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+  objectloaders.loadinventory=function (inventoryPath){
+    $.ajax({
+      url: 'getlocation',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        name: inventoryPath,
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
+      headers: {
+        'Accept': 'application/json'
+      },
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: function(sceneJson) {locationsModule.locations(sceneJson);},
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+  objectloaders.loaditem=function (itemPath){
+    $.ajax({
+      url: 'getitem',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        name: itemPath,
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
+      headers: {
+        'Accept': 'application/json'
+      },
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: function(item) {itemsModule.itemDisplay(item);},
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+
+  function getItemAnd(itemPath,f) {
+    $.ajax({
+      url: 'getitem',
+      type: 'POST',
+      datatype: 'json',
+      data: {
+        name: itemPath,
+        csrfmiddlewaretoken: '{{ csrf_token }}'},
+      headers: {
+        'Accept': 'application/json'
+      },
+      beforeSend: function(xhr) {
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+      success: f,
+      error: function(XMLHttpRequest,textStatus,errorThrown) {
+        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+
+  var objectlocaters={};
+  objectlocaters.loaditem=function (itemPath) {
+    getItemAnd(itemPath,function(item) {
+      locationsModule.askForLocation(item.location);
+    });
+  };
+
+  var csrftoken;
   function savesequence(sequence,name){
     var csrftoken = getCookie('csrftoken');
     $.ajax({
@@ -139,42 +217,27 @@
         alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
   }
 
-  $(document).ready(function() {
-    var csrftoken = getCookie('csrftoken');
-    var fthis=this;
+  function updatelocation(data,location){
+    var itemPath=data[0];
+    getItemAnd(itemPath, function(item) {
+        item.location=location;
+        $.ajax({
+          url: 'saveitem',
+          type: 'POST',
+          datatype: 'json',
+          data: {
+            item: JSON.stringify(item),
+            name: itemPath,
+            csrfmiddlewaretoken: csrftoken},
+          beforeSend: function(xhr) {
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+          error: function(XMLHttpRequest,textStatus,errorThrown) {
+            alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
+      });}
 
-    var objectloaders={};
-    objectloaders.loadsequence=function (sequencePath){
-      $.ajax({
-        url: 'getsequence',
-        type: 'POST',
-        datatype: 'json',
-        data: {
-          name: sequencePath,
-          csrfmiddlewaretoken: '{{ csrf_token }}'},
-        beforeSend: function(xhr) {
-          xhr.setRequestHeader("Accept", "application/json");
-          xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-        success: function(seq) {kineticSequence.sequenceEditor(seq,sequencePath);},
-        error: function(XMLHttpRequest,textStatus,errorThrown) {
-          alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
-    objectloaders.loadinventory=function (inventoryPath){
-      $.ajax({
-        url: 'getlocation',
-        type: 'POST',
-        datatype: 'json',
-        data: {
-          name: inventoryPath,
-          csrfmiddlewaretoken: '{{ csrf_token }}'},
-        headers: {
-          'Accept': 'application/json'
-        },
-        beforeSend: function(xhr) {
-          xhr.setRequestHeader("Accept", "application/json");
-          xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-        success: function(sceneJson) {locationsModule.locations(sceneJson);},
-        error: function(XMLHttpRequest,textStatus,errorThrown) {
-          alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+  $(document).ready(function() {
+    csrftoken = getCookie('csrftoken');
 
     $.ajax({
       url: "getlist",
@@ -205,11 +268,18 @@
           ],
           "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}});
         var datatable=$('#example').dataTable();
-        $('#example tbody').on('dblclick', 'tr', function() {
+        $('#example tbody').on('dblclick', 'tr', function(evt) {
           var name=datatable.fnGetData(this,0);
           var fnName=datatable.fnGetData(this,5);
-          var fn=objectloaders[fnName];
-          fn(name);});
+          if (evt.shiftKey) {
+            var fn=objectlocaters[fnName];
+            fn(name);
+          }
+          else {
+            var fn=objectloaders[fnName];
+            fn(name);
+          }
+        });
         $('#example > tbody > tr').draggable({
           //containment: "#outer",
           helper: function(event) {

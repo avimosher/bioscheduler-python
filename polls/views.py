@@ -149,6 +149,9 @@ def getlist(request):
 		inventory_metadata=client.metadata('/inventory')
 		for obj in inventory_metadata['contents']:
 			data.append([obj['path'],1,'','','','loadinventory'])
+		item_metadata=client.metadata('/items')
+		for obj in item_metadata['contents']:
+			data.append([obj['path'],1,'','','','loaditem'])
 	except Exception as e:
 		print(str(e))
 		traceback.print_exc()
@@ -168,6 +171,13 @@ def kineticjstest(request):
 
 def testjsplumb(request):
 	return render(request, 'testjsplumb.html')
+
+def saveitem(request):
+	item_json=request.POST['item']
+	item_name=request.POST['name']
+	client=dropbox.client.DropboxClient(request.session['access_token'])
+	client.put_file(item_name,io.StringIO(item_json),overwrite=True)
+	return HttpResponse(item_json, content_type='application/json')
 
 def savesequence(request):
 	sequence_json=request.POST['sequence']
@@ -222,6 +232,17 @@ def getsequence(request):
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')
 
 def getlocation(request):
+	absolute_path=request.POST['name']
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		with client.get_file(absolute_path) as f:
+			s=f.read()
+	except Exception as e:
+		print(str(e),file=sys.stderr)
+		raise e
+	return HttpResponse(io.StringIO(s.decode("utf-8")), content_type='application/json')
+
+def getitem(request):
 	absolute_path=request.POST['name']
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])

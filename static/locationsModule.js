@@ -1,10 +1,45 @@
 var locationsModule=(function() {
 	var module={};
 
+	var currentLocation;
+
+	var target;
+	var camera;
+	var scene;
+
+	function targetObject(object,target,camera) {
+		camera.toPerspective();
+		var cameraTarget=object.position;
+		var position=new THREE.Vector3().copy(cameraTarget);
+		position.x+=5;
+		new TWEEN.Tween(camera.position).to({
+			x: position.x,
+			y: position.y,
+			z: position.z
+		}, 600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
+		new TWEEN.Tween(target).to({
+			x: cameraTarget.x,
+			y: cameraTarget.y,
+			z: cameraTarget.z
+		}, 600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
+		console.log(cameraTarget);
+		new TWEEN.Tween(camera.up).to({
+			x: 0, y: 1, z: 0
+		},600).easing(TWEEN.Easing.Sinusoidal.InOut).start();			
+	}
+
+	module.askForLocation=function(location) {
+		var object=scene.getObjectByName(location);		
+		camera.toPerspective();
+		var cameraTarget=object.position;
+		targetObject(object,target,camera);
+	};
+
 	module.locations=function(sceneJson) {
 		var $accordion=$("#accordion");
 		var $header=$('<h3/>',{text: "Babylon"});
 		var $div=$('<div/>',{class: 'tab_container locations', id: "babylon_container"});
+		$div.css({overflow: 'auto'});
 		var babylonContainerName="babylon";
 		//var containCanvas=$('<canvas/>',{id: babylonContainerName});
 		//containCanvas.appendTo($div);
@@ -28,7 +63,7 @@ var locationsModule=(function() {
 		var ASPECT=WIDTH/HEIGHT;
 
 		var loader=new THREE.ObjectLoader();
-		var scene=loader.parse(sceneJson);
+		scene=loader.parse(sceneJson);
 
 		var directionalLight = new THREE.DirectionalLight( 0xb8b8b8 );
 		directionalLight.position.set(1, 1, 1).normalize();
@@ -61,7 +96,7 @@ var locationsModule=(function() {
 
 		var domainSize=boundingBox.size();
 		var domainCenter=boundingBox.center();
-		var target=new THREE.Vector3();
+		target=new THREE.Vector3();
 		target.copy(domainCenter);
 
 		var fovDegrees=60;
@@ -71,7 +106,7 @@ var locationsModule=(function() {
 		var FAR=NEAR+2*cameraHeight;
 
 
-		var camera=new THREE.CombinedCamera(WIDTH,HEIGHT,fovDegrees,NEAR,FAR,.1,.1+2*cameraHeight);
+		camera=new THREE.CombinedCamera(WIDTH,HEIGHT,fovDegrees,NEAR,FAR,.1,.1+2*cameraHeight);
 		//var orbit=new THREE.OrbitControls(camera,$div[0]);
 
 		var basePosition=new THREE.Vector3(0,cameraHeight,0);
@@ -92,6 +127,47 @@ var locationsModule=(function() {
 			renderer.render(scene,camera);
 		}
 
+		for (var i=0;i<scene.children.length;i++) {
+			var object=scene.children[i];
+			if (object.geometry) {
+				var dynamicTexture=new THREEx.DynamicTexture(512,512);
+				dynamicTexture.context.font="bolder 90px Verdana";
+				dynamicTexture.clear('grey').drawText(object.name,undefined,256,'red');
+				dynamicTexture.texture.needsUpdate=true;
+				var material=new THREE.MeshBasicMaterial({
+					map: dynamicTexture.texture
+				});
+				object.material=material;
+			}
+		}
+
+		var $datatable=$('#example').dataTable();
+
+		var $renderer=$(renderer.domElement);
+		$renderer.droppable({
+			drop: function(evt, ui) {
+				var rawMouse={x: evt.clientX-$renderer.offset().left, y: evt.clientY-$renderer.offset().top};
+				var mouse={x: (rawMouse.x/WIDTH)*2-1, y: -(rawMouse.y/HEIGHT)*2+1};
+				var vector=new THREE.Vector3(mouse.x,mouse.y,.5);	
+			var ray;
+				if (camera.inOrthographicMode) {
+					var secondVector=new THREE.Vector3(mouse.x,mouse.y,-1);
+					secondVector.unproject(camera);
+					vector.unproject(camera);
+					vector.sub(secondVector);
+					ray=new THREE.Raycaster(secondVector,vector.normalize());
+				}
+				else {
+					vector.unproject(camera);
+					ray=new THREE.Raycaster(camera.position,vector.sub(camera.position).normalize());
+				}
+				var intersects=ray.intersectObjects(scene.children, true);
+				if (intersects.length > 0) {
+					console.log(intersects[0].object);
+					updatelocation($datatable.fnGetData(ui.draggable),intersects[0].object.name);
+				}
+			}
+		});
 		renderer.domElement.addEventListener('dblclick',function(evt) {
 			evt.preventDefault();
 			camera.toOrthographic();
@@ -109,37 +185,11 @@ var locationsModule=(function() {
 			evt.preventDefault();
 			var mouse={x: (evt.offsetX/WIDTH)*2-1, y: -(evt.offsetY/HEIGHT)*2+1};
 			var vector=new THREE.Vector3(mouse.x,mouse.y,.5);
-			console.log(scene);
 			vector.unproject(camera);
 			var raycaster = new THREE.Raycaster( camera.position, vector.sub( camera.position ).normalize() );
 			var intersects = raycaster.intersectObjects( scene.children, true );
 			if ( intersects.length > 0 ) {
-				camera.toPerspective();
-				var cameraTarget=intersects[0].object.position;
-				//cameraTarget=new THREE.Vector3(0,0,-1);
-				//cameraTarget.applyMatrix4(camera.matrixWorld);
-
-				var position=new THREE.Vector3().copy(cameraTarget);
-				position.x+=5;
-				console.log(position);
-				new TWEEN.Tween(camera.position).to({
-					x: position.x,
-					y: position.y,
-					z: position.z
-				}, 600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
-				
-				
-				new TWEEN.Tween(target).to({
-					x: cameraTarget.x,
-					y: cameraTarget.y,
-					z: cameraTarget.z
-				}, 600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
-				console.log(cameraTarget);
-				new TWEEN.Tween(camera.up).to({
-					x: 0, y: 1, z: 0
-				},600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
-				
-				console.log(intersects);
+				targetObject(intersects[0].object.position,target,camera);
 			}
 
 		},false);
