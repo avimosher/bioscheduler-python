@@ -58,32 +58,28 @@ var locationsModule=(function() {
 				boundingBox.union(box);
 			}
 		}
-		console.log(boundingBox);
 
 		var domainSize=boundingBox.size();
 		var domainCenter=boundingBox.center();
-
-		var midPlane=domainCenter.y;
-		
+		var target=new THREE.Vector3();
+		target.copy(domainCenter);
 
 		var fovDegrees=60;
 		var fovRadians=fovDegrees*Math.PI/180;
 		var cameraHeight=domainSize.z/2/Math.tan(fovRadians/2);
-		console.log(cameraHeight);
 		var NEAR=.01;
 		var FAR=NEAR+2*cameraHeight;
 
 
 		var camera=new THREE.CombinedCamera(WIDTH,HEIGHT,fovDegrees,NEAR,FAR,.1,.1+2*cameraHeight);
-		var orbit=new THREE.OrbitControls(camera,$div[0]);
-		camera.position.z=0;
-		camera.position.x=0;
-		camera.position.y=cameraHeight;
-		camera.position.add(domainCenter);
-		var target=domainCenter;
+		//var orbit=new THREE.OrbitControls(camera,$div[0]);
+
+		var basePosition=new THREE.Vector3(0,cameraHeight,0);
+		basePosition.add(domainCenter);
+		camera.position.copy(basePosition);
 		camera.up=new THREE.Vector3(0,0,1);
 		camera.lookAt(target);
-		orbit.target=target;
+		//orbit.target=target;
 		camera.updateProjectionMatrix();
 		camera.toOrthographic();
 
@@ -96,7 +92,20 @@ var locationsModule=(function() {
 			renderer.render(scene,camera);
 		}
 
-		renderer.domElement.addEventListener('mousedown',function(evt) {
+		renderer.domElement.addEventListener('dblclick',function(evt) {
+			evt.preventDefault();
+			camera.toOrthographic();
+			new TWEEN.Tween(camera.position).to({
+				x: basePosition.x, y: basePosition.y, z: basePosition.z
+			},600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
+			new TWEEN.Tween(target).to({
+				x: domainCenter.x, y: domainCenter.y, z: domainCenter.z
+			},600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
+			new TWEEN.Tween(camera.up).to({
+				x: 0, y: 0, z: 1
+			},600).easing(TWEEN.Easing.Sinusoidal.InOut).start();
+		});
+		renderer.domElement.addEventListener('click',function(evt) {
 			evt.preventDefault();
 			var mouse={x: (evt.offsetX/WIDTH)*2-1, y: -(evt.offsetY/HEIGHT)*2+1};
 			var vector=new THREE.Vector3(mouse.x,mouse.y,.5);
@@ -106,7 +115,6 @@ var locationsModule=(function() {
 			var intersects = raycaster.intersectObjects( scene.children, true );
 			if ( intersects.length > 0 ) {
 				camera.toPerspective();
-
 				var cameraTarget=intersects[0].object.position;
 				//cameraTarget=new THREE.Vector3(0,0,-1);
 				//cameraTarget.applyMatrix4(camera.matrixWorld);
