@@ -86,7 +86,7 @@ def augmentlist(request):
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
-			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+			if 'mime_type' in obj and obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
 				absolute_path=obj['path']
 				f=client.get_file(absolute_path)
 				s=io.BytesIO(f.read())
@@ -119,7 +119,8 @@ def getlist(request):
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
-			if (obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'):
+			print(json.dumps(obj))
+			if 'mime_type' in obj and obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
 				absolute_path=obj['path']
 				f=client.get_file(absolute_path)
 				s=f.read()
@@ -141,10 +142,13 @@ def getlist(request):
 						extension=sheet.cell_value(current_row,extension_column)
 						complementary_column=6
 						complementary=sheet.cell_value(current_row,complementary_column)
-						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper()])
+						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'loadsequence'])
 						current_row+=1
 			else:
-				data.append([obj['path'],obj['size'],'','',''])
+				data.append([obj['path'],obj['size'],'','','','loadsequence'])
+		inventory_metadata=client.metadata('/inventory')
+		for obj in inventory_metadata['contents']:
+			data.append([obj['path'],1,'','','','loadinventory'])
 	except Exception as e:
 		print(str(e))
 		traceback.print_exc()
@@ -216,3 +220,14 @@ def getsequence(request):
 	jsonstring=output.getvalue()
 	print(jsonstring)
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')
+
+def getlocation(request):
+	absolute_path=request.POST['name']
+	try:
+		client=dropbox.client.DropboxClient(request.session['access_token'])
+		with client.get_file(absolute_path) as f:
+			s=f.read()
+	except Exception as e:
+		print(str(e),file=sys.stderr)
+		raise e
+	return HttpResponse(io.StringIO(s.decode("utf-8")), content_type='application/json')

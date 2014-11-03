@@ -141,8 +141,10 @@
 
   $(document).ready(function() {
     var csrftoken = getCookie('csrftoken');
+    var fthis=this;
 
-    function loadsequence(sequencePath){
+    var objectloaders={};
+    objectloaders.loadsequence=function (sequencePath){
       $.ajax({
         url: 'getsequence',
         type: 'POST',
@@ -154,6 +156,23 @@
           xhr.setRequestHeader("Accept", "application/json");
           xhr.setRequestHeader("X-CSRFToken", csrftoken);},
         success: function(seq) {kineticSequence.sequenceEditor(seq,sequencePath);},
+        error: function(XMLHttpRequest,textStatus,errorThrown) {
+          alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
+    objectloaders.loadinventory=function (inventoryPath){
+      $.ajax({
+        url: 'getlocation',
+        type: 'POST',
+        datatype: 'json',
+        data: {
+          name: inventoryPath,
+          csrfmiddlewaretoken: '{{ csrf_token }}'},
+        headers: {
+          'Accept': 'application/json'
+        },
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader("Accept", "application/json");
+          xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+        success: function(sceneJson) {locationsModule.locations(sceneJson);},
         error: function(XMLHttpRequest,textStatus,errorThrown) {
           alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
 
@@ -176,16 +195,21 @@
           { "title": "Length", "class": "center"},
           { "title": "Sequence"},
           { "title": "Extension"},
-          { "title": "Complementary"}],
+          { "title": "Complementary"},
+          { "title": "Function"}],
           "columnDefs": [
           { "targets": [2], "visible": false},
           { "targets": [3], "visible": false},
           { "targets": [4], "visible": false},
+          { "targets": [5], "visible": false}
           ],
           "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}});
+        var datatable=$('#example').dataTable();
         $('#example tbody').on('dblclick', 'tr', function() {
-          var name=$('td',this).eq(0).text(); // this is how the datatables demo does it, sadly
-          loadsequence(name);});
+          var name=datatable.fnGetData(this,0);
+          var fnName=datatable.fnGetData(this,5);
+          var fn=objectloaders[fnName];
+          fn(name);});
         $('#example > tbody > tr').draggable({
           //containment: "#outer",
           helper: function(event) {
