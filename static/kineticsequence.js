@@ -105,7 +105,6 @@ var kineticSequence=(function() {
       // fix features
       for (var i=0;i<originalFeatures.length;i++) {
         feature=originalFeatures[i];
-        console.log('rectifying');
         if(!adjustFeature(feature,sortedStart,sortedEnd,text.length)) {
           originalFeatures.slice(i);
           i--;}}
@@ -300,21 +299,24 @@ var kineticSequence=(function() {
           r.selectNodeContents(outerContainer[0]);
           s.removeAllRanges();
           s.addRange(r);
-        	if(event.which==1){
+        	if(options.evt.which==1){
+            var offsetX=(options.evt.offsetX || options.evt.clientX - $(options.evt.target).offset().left);
             containCanvas.focus();
             selecting=true;
-            selection.end=getBase(options.evt.offsetX,this);
+            selection.end=getBase(offsetX,this);
       	    if(!options.evt.shiftKey) {selection.start=selection.end;}
       	    updateSelection();
         	}});
         group.on("selectmove", function(options) {
           if (selecting) {
-            selection.end=getBase(options.evt.offsetX,this);
+            var offsetX=(options.evt.offsetX || options.evt.clientX - $(options.evt.target).offset().left);
+            selection.end=getBase(offsetX,this);
             updateSelection();
           }});
         group.on("mousemove", function(options) {
           if (selecting) {
-            selection.end=getBase(options.evt.offsetX,this);
+            var offsetX=(options.evt.offsetX || options.evt.clientX - $(options.evt.target).offset().left);
+            selection.end=getBase(offsetX,this);
             updateSelection();
           }});
         group.on("mouseup", function() {selecting=false;});
@@ -452,7 +454,8 @@ var kineticSequence=(function() {
       featureGroup.on('click', function(evt) {this.selectFeature();});
       featureGroup.on('mousedown', function(options) {
         var parentGroup=getParentGroup(this);
-        var clickedBase=getBase(options.evt.offsetX,parentGroup);
+        var offsetX=(options.evt.offsetX || options.evt.clientX - $(options.evt.target).offset().left);
+        var clickedBase=getBase(offsetX,parentGroup);
         var selectFeatureOptions=[];
         if (options.evt.ctrlKey) {
           originalFeatures.splice(feature.index);
@@ -516,8 +519,9 @@ var kineticSequence=(function() {
         var evt=options.evt;
         var cursorType='default';
         if (evt.shiftKey) {
+          var offsetX=(evt.offsetX || evt.clientX - $(evt.target).offset().left);
           var parentGroup=getParentGroup(this);
-          var clickedBase=getBase(evt.offsetX,parentGroup);
+          var clickedBase=getBase(offsetX,parentGroup);
           if (nearFeatureBoundary(clickedBase,feature)){
             cursorType='pointer';}}
         document.body.style.cursor=cursorType;

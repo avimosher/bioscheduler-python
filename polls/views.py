@@ -79,8 +79,8 @@ def simpletest(request):
 def get_dropbox_auth_flow(session):
 	app_key='p7b7j5v29v38bnk'
 	app_secret='q83heifozbsktdy'
-	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://bioscheduler.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
-#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://bioscheduler.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 
 def augmentlist(request):
 	newsequences=request.POST['oligos']
