@@ -148,7 +148,7 @@ def getlist(request):
 							extension=sheet.cell_value(current_row,extension_column)
 							complementary_column=6
 							complementary=sheet.cell_value(current_row,complementary_column)
-						catch:
+						except:
 							pass
 						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'loadsequence'])
 						current_row+=1
