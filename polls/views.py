@@ -141,10 +141,15 @@ def getlist(request):
 						name=sheet.cell_value(current_row,name_column)
 						sequence_column=2
 						sequence=sheet.cell_value(current_row,sequence_column).replace(" ","")
-						extension_column=5
-						extension=sheet.cell_value(current_row,extension_column)
-						complementary_column=6
-						complementary=sheet.cell_value(current_row,complementary_column)
+						extension=""
+						complementary=""
+						try:
+							extension_column=5
+							extension=sheet.cell_value(current_row,extension_column)
+							complementary_column=6
+							complementary=sheet.cell_value(current_row,complementary_column)
+						catch:
+							pass
 						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'loadsequence'])
 						current_row+=1
 			else:
