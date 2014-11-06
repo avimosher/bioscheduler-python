@@ -149,12 +149,15 @@ def getlist(request):
 						current_row+=1
 			else:
 				data.append([obj['path'],obj['size'],'','','','loadsequence'])
-		inventory_metadata=client.metadata('/inventory')
-		for obj in inventory_metadata['contents']:
-			data.append([obj['path'],1,'','','','loadinventory'])
-		item_metadata=client.metadata('/items')
-		for obj in item_metadata['contents']:
-			data.append([obj['path'],1,'','','','loaditem'])
+		try:
+			inventory_metadata=client.metadata('/inventory')
+			for obj in inventory_metadata['contents']:
+				data.append([obj['path'],1,'','','','loadinventory'])
+			item_metadata=client.metadata('/items')
+			for obj in item_metadata['contents']:
+				data.append([obj['path'],1,'','','','loaditem'])
+		except:
+			pass
 	except Exception as e:
 		print(str(e))
 		traceback.print_exc()

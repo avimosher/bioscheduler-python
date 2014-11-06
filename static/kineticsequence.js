@@ -54,6 +54,7 @@ var kineticSequence=(function() {
     var fontFamily='monospace';
     var featureLayer=new Kinetic.Layer();
     var tooltipLayer=new Kinetic.Layer();
+    var selectionLayer=new Kinetic.Layer();
 
     function addFeature(foundIndex, row, complementarySequence, strand) {
       if (foundIndex==-1) {return;}
@@ -190,13 +191,15 @@ var kineticSequence=(function() {
     var lineStructure={};
     var selection={start: 0, end: 0};
     var selecting=false;
-    var cursor=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 1, fill: 'black'});
+    var cursor=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 1, fill: 'black', listening: false});
 
     function initializeDisplay() {
       featureLayer.destroy();
       featureLayer=new Kinetic.Layer();
       tooltipLayer.destroy();
       tooltipLayer=new Kinetic.Layer();
+      selectionLayer.destroy();
+      selectionLayer=new Kinetic.Layer();
       stage.setWidth(containCanvas.width());
       var usefulCanvasWidth=stage.getWidth()-leftMargin-rightMargin;
       lineStructure.charactersPerLine=Math.floor(usefulCanvasWidth/fontWidth);
@@ -210,7 +213,7 @@ var kineticSequence=(function() {
         var end=Math.min(dna.length,(i+1)*lineStructure.charactersPerLine);
         var subtext=dna.substring(start,end);
         var text=new Kinetic.Text({text: subtext, x: 0, top: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'black'});
-        var groupSelection=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black'});
+        var groupSelection=new Kinetic.Rect({x: 0, y: 0, height: fontSize, width: 0, opacity: 0.5, fill: 'black', listening: false});
         var groupTranslation=new Kinetic.Text({text: "", x: 0, y: 0, fontSize: fontSize, fontFamily: fontFamily, fill: 'blue'});
 
         var group=new Kinetic.Group({x: leftMargin, y: runningTop});
@@ -278,7 +281,7 @@ var kineticSequence=(function() {
         line.translation.position({y: groupHeight(line), x: 0});
         line.totalHeight=groupHeight(line)+lineSeparation;
         runningHeight+=line.totalHeight;
-        var backgroundRect=new Kinetic.Rect({x: 0, y: 0, width: groupWidth(line), height: line.totalHeight, opacity: .1, fill: 'grey'});
+        var backgroundRect=new Kinetic.Rect({x: 0, y: 0, width: groupWidth(line), height: line.totalHeight, opacity: .1, fill: 'grey', listening: false});
         line.add(backgroundRect);
         backgroundRect.moveToBottom();
 
@@ -325,6 +328,7 @@ var kineticSequence=(function() {
       stage.setHeight(runningHeight+lineSeparation);
       stage.add(featureLayer);
       stage.add(tooltipLayer);
+      stage.add(selectionLayer);
       updateSelection();}
 
     function drawFeature(rangeEvent,line) {
@@ -380,6 +384,7 @@ var kineticSequence=(function() {
         shadowOpacity: .5});
       var nonComplementaryFill='pink';
       var nonComplementaryShape=new Kinetic.Rect({
+        listening: false,
         x: lineNonComplementaryStart,
         width: lineNonComplementaryWidth,
         y: 0,
