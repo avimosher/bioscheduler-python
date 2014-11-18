@@ -1,5 +1,4 @@
-﻿//define(function() {
-    alert('begin');
+﻿define(function() {
     var NEB = {};
     NEB.trim = function (str) {
         return str.replace(/^\s+|\s+$/g, '');
@@ -287,5 +286,5 @@
             exports[f] = NEB[f];
         }
     }
-    //return NEB;
-//});
+    return NEB;
+});

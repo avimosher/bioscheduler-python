@@ -1,6 +1,7 @@
 //Written by Paul Stothard, University of Alberta, Canada
 
-function getGeneticCodeString (type) {
+define(function() {
+	function getGeneticCodeString (type) {
 
 //  The Standard Code (transl_table=1)
 //    AAs  = FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG
@@ -555,4 +556,6 @@ function getGeneticCodeString (type) {
 	}
 
 	return true;
-}
+};
+	return {getGeneticCodeString: getGeneticCodeString};
+});

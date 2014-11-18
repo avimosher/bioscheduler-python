@@ -1,12 +1,14 @@
-define(['jquery'],function($) {
+define(['jquery','locations_module'],function($,locations) {
 	var module={};
 
-	alert('yo');
-	module.loadURL='getitems';
+	module.loadURL='getitem';
 
-	module.itemDisplay=function(item) {
-				console.log(locations);	
+	module.askForLocation=function(location) {
+		locations.askForLocation(location);
+	};
 
+	module.openItem=function(item,itemName) {
+		console.log(locations);	
 		var $accordion=$("#accordion");
 		var $header=$('<h3/>',{text: "Babylon"});
 		var $div=$('<div/>',{class: 'tab_container item'});

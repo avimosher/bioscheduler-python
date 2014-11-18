@@ -1,9 +1,13 @@
-var kineticSequence=(function() {
-  var module={};
+define('kineticsequence',['jquery','tmcalc_support','kinetic','kinetic.editable','sms/sms_common','sms/sms_genetic_codes'],function($,NEB,kinetic,editable,sms,sms_genetic) {
+  var kinetictest={};
+  editable.init(kinetictest);
+  console.log(window.Kinetic);
+  console.log(sms_genetic);
+  var module={loadURL: 'getsequence'};
 
   module.activeSequences={};
 
-  module.sequenceEditor=function (seq, sequencePath) {
+  module.openItem=function (seq, sequencePath) {
     var activeIndex=module.activeSequences[seq.name];
     var $accordion=$("#accordion");
     if (typeof activeIndex!='undefined') {
@@ -138,7 +142,7 @@ var kineticSequence=(function() {
       originalFeatures=originalFeatures.concat(newFeatures);
       newFeatures=[];
       var sequence={seq: dna, features: originalFeatures, name: seq.name};
-      savesequence(sequence,sequencePath);});
+      savesequence(sequence,sequencePath.name);});
     containCanvas.on("mapoligos", function() {
       $.each($("#example").dataTable().fnGetData(), function(i, row) {
         if (row[2]) {
@@ -749,9 +753,9 @@ var kineticSequence=(function() {
     return null;}
   function translate(seq) {
     var dnaSequence=seq.toLowerCase();
-    var code=getGeneticCodeString("standard").split(/,/);
-    var matchExp=getGeneticCodeMatchExp(code);
-    var matchResult=getGeneticCodeMatchResult(code);
+    var code=sms_genetic.getGeneticCodeString("standard").split(/,/);
+    var matchExp=sms.getGeneticCodeMatchExp(code);
+    var matchResult=sms.getGeneticCodeMatchResult(code);
     dnaSequence=dnaSequence.replace(/(...)/g,function (str, p1, offset, s) {return " "+p1+" ";});
     for (var i=0;i<matchExp.length;i++) {
       dnaSequence=dnaSequence.replace(matchExp[i],matchResult[i]);}
@@ -782,4 +786,4 @@ var kineticSequence=(function() {
   }
 
   return module;
-}());
+});

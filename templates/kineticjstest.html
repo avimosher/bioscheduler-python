@@ -4,42 +4,23 @@
   <meta charset="utf-8">
   <title>Bioscheduler</title>
   {% load staticfiles %}
-  <link rel="stylesheet" type="text/css" href="{% static "datatables/css/jquery.dataTables.css" %}">
+  <link rel="stylesheet" type="text/css" href="{% static "jquery-ui/css/jquery.dataTables.css" %}">
   <link rel="stylesheet" href="{% static "jquery-ui/jquery-ui.css" %}">
   <script type="text/javascript">
     var staticPath="{% static "" %}";
   </script>
-  <script src="{% static "tmcalc-support.js" %}"></script>
-  <script src="{% static "kinetic.js" %}"></script>
-  <script src="{% static "kinetic.editable.js" %}"></script>
-  <script src="{% static "kineticsequence.js" %}"></script>
+  <script data-main="{% static "main" %}" src="{% static "require.js" %}"></script>
+<!--
   <script src="{% static "fluidsGridModule.js" %}"></script>
   <script src="{% static "numeric-1.2.6.js" %}"></script>
-  <script src="{% static "jquery.min.js" %}"></script>
-  <script src="{% static "datatables/js/jquery.dataTables.js" %}"></script>
-  <script src="{% static "jquery-ui/jquery-ui.js" %}"></script>
-  <!--
-  <link rel="stylesheet" href="{% static "evidencegraph.css" %}">
-  <script src="{% static "d3.v3.min.js" %}"></script>
-  <script src="{% static "evidencegraph.js" %}"></script>-->
   <script src="{% static "contextMenu/jquery.ui.position.js" %}"></script>
   <script src="{% static "contextMenu/jquery.contextMenu.js" %}"></script>
   <link rel="stylesheet" type="text/css" href="{% static "contextMenu/jquery.contextMenu.css" %}"/>
-  <script src="{% static "sms/sms_common.js" %}"></script>
-  <script src="{% static "sms/sms_genetic_codes.js" %}"></script>
   <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/demo.css" %}"/>
   <link rel="stylesheet" type="text/css" href="{% static "jsPlumb/css/jsplumb.css" %}"/>
   <script src="{% static "jsPlumb/package-demo.js" %}"></script>
   <script src="{% static "molarityCalculator.js" %}"></script>
-  <!--<script src="{% static "jquery-terminal/jquery.terminal-0.8.8.min.js" %}"></script>
-  <link rel="stylesheet" type="text/css" href="{% static "jquery-terminal/jquery.terminal.css" %}"/>-->
-  <script src="{% static "tween.min.js" %}"></script>
-  <script src="{% static "three.min.js" %}"></script>
-  <script src="{% static "three/OrbitControls.js" %}"></script>
-  <script src="{% static "three/CombinedCamera.js" %}"></script>
-  <script src="{% static "three/threex.dynamictexture.js" %}"></script>
-  <script src="{% static "locationsModule.js" %}"></script>
-  <script src="{% static "itemDisplay.js" %}"></script>
+-->
   <style>
   body {margin: 0px;}
   .ui-widget-content { width: 150px; height: 150px; position: absolute; }
@@ -90,97 +71,8 @@
   }
   </style>
   <script id="mainscript" class="init">
-  function getCookie(name) {
-      var cookieValue = null;
-      if (document.cookie && document.cookie != '') {
-          var cookies = document.cookie.split(';');
-          for (var i = 0; i < cookies.length; i++) {
-              var cookie = jQuery.trim(cookies[i]);
-              // Does this cookie string begin with the name we want?
-              if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                  break;}}}
-      return cookieValue;}
 
-  function ls() {
-    console.log('ls');
-  }
-
-  var objectloaders={};
-  objectloaders.loadsequence=function (sequencePath){
-    $.ajax({
-      url: 'getsequence',
-      type: 'POST',
-      datatype: 'json',
-      data: {
-        name: sequencePath,
-        csrfmiddlewaretoken: '{{ csrf_token }}'},
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-      success: function(seq) {kineticSequence.sequenceEditor(seq,sequencePath);},
-      error: function(XMLHttpRequest,textStatus,errorThrown) {
-        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
-  objectloaders.loadinventory=function (inventoryPath){
-    $.ajax({
-      url: 'getlocation',
-      type: 'POST',
-      datatype: 'json',
-      data: {
-        name: inventoryPath,
-        csrfmiddlewaretoken: '{{ csrf_token }}'},
-      headers: {
-        'Accept': 'application/json'
-      },
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-      success: function(sceneJson) {locationsModule.locations(sceneJson);},
-      error: function(XMLHttpRequest,textStatus,errorThrown) {
-        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
-  objectloaders.loaditem=function (itemPath){
-    $.ajax({
-      url: 'getitem',
-      type: 'POST',
-      datatype: 'json',
-      data: {
-        name: itemPath,
-        csrfmiddlewaretoken: '{{ csrf_token }}'},
-      headers: {
-        'Accept': 'application/json'
-      },
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-      success: function(item) {itemsModule.itemDisplay(item);},
-      error: function(XMLHttpRequest,textStatus,errorThrown) {
-        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
-
-  function getItemAnd(itemPath,f) {
-    $.ajax({
-      url: 'getitem',
-      type: 'POST',
-      datatype: 'json',
-      data: {
-        name: itemPath,
-        csrfmiddlewaretoken: '{{ csrf_token }}'},
-      headers: {
-        'Accept': 'application/json'
-      },
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-      success: f,
-      error: function(XMLHttpRequest,textStatus,errorThrown) {
-        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});}
-
-  var objectlocaters={};
-  objectlocaters.loaditem=function (itemPath) {
-    getItemAnd(itemPath,function(item) {
-      locationsModule.askForLocation(item.location);
-    });
-  };
-
+/*
   var csrftoken;
   function savesequence(sequence,name){
     var csrftoken = getCookie('csrftoken');
@@ -234,65 +126,12 @@
           error: function(XMLHttpRequest,textStatus,errorThrown) {
             alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
       });}
-
+*/
+/*
   $(document).ready(function() {
     csrftoken = getCookie('csrftoken');
 
-    $.ajax({
-      url: "getlist",
-      type: "POST",
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'},          
-      beforeSend: function(xhr) {
-        xhr.setRequestHeader("Accept", "application/json");
-        xhr.setRequestHeader("Content-Type", "application/json");
-        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
-      success: function(seqList) {
-        $('#demo').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="example"></table>' );
-        $('#example').dataTable( {
-          "data" : seqList,
-          "columns": [
-          { "title": "Name"},
-          { "title": "Length", "class": "center"},
-          { "title": "Sequence"},
-          { "title": "Extension"},
-          { "title": "Complementary"},
-          { "title": "Function"}],
-          "columnDefs": [
-          { "targets": [2], "visible": false},
-          { "targets": [3], "visible": false},
-          { "targets": [4], "visible": false},
-          { "targets": [5], "visible": false}
-          ],
-          "createdRow": function(row,data,dataIndex) { $(row).addClass("inventoryItem");}});
-        var datatable=$('#example').dataTable();
-        $('#example tbody').on('dblclick', 'tr', function(evt) {
-          var name=datatable.fnGetData(this,0);
-          var fnName=datatable.fnGetData(this,5);
-          if (evt.shiftKey) {
-            var fn=objectlocaters[fnName];
-            fn(name);
-          }
-          else {
-            var fn=objectloaders[fnName];
-            fn(name);
-          }
-        });
-        $('#example > tbody > tr').draggable({
-          //containment: "#outer",
-          helper: function(event) {
-            var _this=$(this);
-            var name=$('td',this).eq(0).text();
-            var new_ele=$('<div class="inventoryItem">'+name+'</div>');
-            return new_ele.clone();},
-          appendTo: 'body'});}});
 
-    var icons={header: "ui-icon-close"};
-    $('#accordion').accordion({
-      heightStyle: "fill",
-      collapsible: true,
-      icons: icons});
 
     $.contextMenu({
       selector: ".inventoryItem",
@@ -341,21 +180,8 @@
             "sep1": "---------",
             "quit": {name: "Quit", icon: "quit"}}}}});
 
-    /*$("#terminal").terminal(function(command, term) {
-      if (command!=='') {
-        try {
-          var result=window.eval(command);
-          if (result !== undefined) {term.echo(new String(result));}
-        } catch (e) {term.error(new String(e));}
-      } else {term.echo('');}
-    }, {
-      greetings: 'Javascript Interpreter',
-      name: 'bioscheduler_terminal',
-      height: 200,
-      prompt: 'bs> '
-    });*/
   });
-
+*/
 
 </script>
 </head>

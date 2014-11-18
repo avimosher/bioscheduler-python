@@ -1,5 +1,5 @@
-define(['three','tween','three/OrbitControls','three/CombinedCamera','three/threex.dynamictexture'],function() {
-	var module={};
+define(function() {
+	var module={loadURL: 'getlocation', locateURL: 'getitem'};
 
 	var currentLocation;
 	var target;
@@ -28,13 +28,14 @@ define(['three','tween','three/OrbitControls','three/CombinedCamera','three/thre
 	}
 
 	module.askForLocation=function(location) {
-		var object=scene.getObjectByName(location);		
+		console.log(location);
+		var object=scene.getObjectByName(location);
 		camera.toPerspective();
 		var cameraTarget=object.position;
 		targetObject(object,target,camera);
 	};
 
-	module.locations=function(sceneJson) {
+	module.openItem=function(sceneJson) {
 		var $accordion=$("#accordion");
 		var $header=$('<h3/>',{text: "Babylon"});
 		var $div=$('<div/>',{class: 'tab_container locations', id: "babylon_container"});
@@ -196,4 +197,4 @@ define(['three','tween','three/OrbitControls','three/CombinedCamera','three/thre
 	}
 
 	return module;
-}());	
+});	

@@ -1,5 +1,7 @@
 //Written by Paul Stothard, University of Alberta, Canada
 
+define(function(){
+
 function addReturns (sequence) {
 	sequence = sequence.replace(/(.{60})/g, 
                     function (str, p1, offset, s) {
@@ -1034,3 +1036,6 @@ function writeShuffledSequence (sequence)	{
 	outputWindow.document.write(tempSeq + '\n');
 	return true;
 }
+	return {getGeneticCodeMatchExp: getGeneticCodeMatchExp,
+		getGeneticCodeMatchResult: getGeneticCodeMatchResult};
+});

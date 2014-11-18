@@ -116,13 +116,22 @@ def augmentlist(request):
 		raise e
 	return HttpResponse("success", content_type='application/text')
 
+#def retrieve_modules(request):
+#	try:
+#		client=dropbox.client.DropboxClient(request.session['access_token'])
+#		module_metadata=client.metadata('/modules')
+#		for obj in module_metadata['contents']:
+#
+#			data.append([obj['path'],1,'','','','loadinventory'])
+
+
 def getlist(request):
 	data=[]
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		folder_metadata=client.metadata('/')
 		for obj in folder_metadata['contents']:
-			print(json.dumps(obj))
+			#print(json.dumps(obj))
 			if 'mime_type' in obj and obj['mime_type'] == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
 				absolute_path=obj['path']
 				f=client.get_file(absolute_path)
@@ -150,17 +159,17 @@ def getlist(request):
 							complementary=sheet.cell_value(current_row,complementary_column)
 						except:
 							pass
-						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'loadsequence'])
+						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'kineticsequence'])
 						current_row+=1
 			else:
-				data.append([obj['path'],obj['size'],'','','','loadsequence'])
+				data.append([obj['path'],obj['size'],'','','','kineticsequence'])
 		try:
 			inventory_metadata=client.metadata('/inventory')
 			for obj in inventory_metadata['contents']:
-				data.append([obj['path'],1,'','','','loadinventory'])
+				data.append([obj['path'],1,'','','','locations_module'])
 			item_metadata=client.metadata('/items')
 			for obj in item_metadata['contents']:
-				data.append([obj['path'],1,'','','','loaditem'])
+				data.append([obj['path'],1,'','','','item_display'])
 		except:
 			pass
 	except Exception as e:
@@ -243,6 +252,7 @@ def getsequence(request):
 	return HttpResponse(jsonstring[2:-2], content_type='application/json')
 
 def getlocation(request):
+	print('getlocation')
 	absolute_path=request.POST['name']
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
@@ -255,6 +265,7 @@ def getlocation(request):
 
 def getitem(request):
 	absolute_path=request.POST['name']
+	print('getitem',file=sys.stderr)
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
 		with client.get_file(absolute_path) as f:
@@ -262,4 +273,5 @@ def getitem(request):
 	except Exception as e:
 		print(str(e),file=sys.stderr)
 		raise e
+	print(s.decode("utf-8"))
 	return HttpResponse(io.StringIO(s.decode("utf-8")), content_type='application/json')

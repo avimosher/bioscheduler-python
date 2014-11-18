@@ -8,6 +8,7 @@
  *
  */
 
+define(['three.min'],function() {
 
 THREE.CombinedCamera = function ( width, height, fov, near, far, orthoNear, orthoFar ) {
 
@@ -234,3 +235,4 @@ THREE.CombinedCamera.prototype.toBottomView = function() {
 	this.rotationAutoUpdate = false;
 
 };
+});
