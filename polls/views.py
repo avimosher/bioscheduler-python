@@ -6,7 +6,7 @@ import json
 import sys
 import io
 import os
-from Bio.Seq import Seq
+from Bio.Seq import Seq, reverse_complement
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio import SeqIO
@@ -277,12 +277,9 @@ def getdropboxsequence(request,name):
 			raise e
 		return seq
 	elif fileExtension=='.seq':
-		print(s)
-		class blank(object): pass
-		seq=blank()
-		seq.name=fileName
-		seq.seq="".join(s.decode("utf-8").split())
-		seq.features=[]
+		simple_seq=Seq("".join(s.decode("utf-8").split()))
+		seq=SeqRecord(simple_seq)
+		seq.id=fileName
 		return seq
 	else:
 		print('impossible case')
@@ -291,16 +288,20 @@ def getdropboxsequence(request,name):
 
 def align(request):
 	names=request.POST.getlist('sequences[]')
-	print(json.dumps(names))
+	directions=request.POST.getlist('directions[]')
 	fasta_string=""
 	aligned_sequences={}
 	try:
-		for name in names:
+		for (name, direction) in zip(names, directions):
 			seq=getdropboxsequence(request,name)
-			print(dir(seq))
 			fasta_string+=">"+name+"\n"
-			fasta_string+=str(seq.seq)+"\n"
-		print(fasta_string)
+			print("direction"+str(direction))
+			if direction=="1":
+				print("forward")
+				fasta_string+=str(seq.seq)+"\n"
+			else:
+				print("reverse")
+				fasta_string+=reverse_complement(str(seq.seq))+"\n"
 		cmd=Popen(['muscle'],stdout=PIPE,stdin=PIPE)
 		stdout_data,stderr_data=cmd.communicate(input=fasta_string.encode("utf-8"))
 		align=AlignIO.read(io.StringIO(stdout_data.decode('utf-8')),"fasta")

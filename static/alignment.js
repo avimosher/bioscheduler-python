@@ -4,17 +4,30 @@ define('alignment',['jquery','kinetic'],function($,kinetic) {
 	alignment.openItem=function(seq, sequencePath) {
 		var $accordion=$("#accordion");
 		var $header=$('<h3/>',{text: "Alignment"});
-		var $div=$('<div/>',{class: 'tab_container alignment'});
+		var $div=$('<div/>',{class: 'tab_container'}).css({position: 'relative'});
 		var $list=$('<select/>',{size: 5});
-		$div.append($list);
-		$div.css({'white-space': 'nowrap','overflow': 'auto'});
+		var $leftdiv=$('<div/>',{class: 'alignment'}).width('20%');
+		$leftdiv.append($list);
+		var $rightwrapper=$('<div/>').width('70%').css({'overflow-x': 'auto'});
+		var $rightdiv=$('<div/>',{class: 'alignment'});
+		$rightdiv.css({'white-space': 'nowrap','overflow': 'auto'});
+		$rightwrapper.append($rightdiv);
+		$div.append($leftdiv);
+		$div.append($rightwrapper);
 		$accordion.append([$header,$div]);
 		$accordion.accordion('refresh');
 		$accordion.accordion("option","active",-1);
 		var $datatable=$('#example').dataTable();
 		var contents=[];
+		var direction=[];
 		$div.droppable({
 			drop: function(evt,ui) {
+			    if (evt.shiftKey) {
+				direction.push(-1);
+			    }
+			    else {
+				direction.push(1);
+			    }
 			    var fields=$datatable.fnGetData(ui.draggable);
 			    $list.append($('<option/>').text(fields[0]).val(fields[0]));
 			    contents.push(fields[0]);
@@ -34,6 +47,19 @@ define('alignment',['jquery','kinetic'],function($,kinetic) {
 		    return cookieValue;}
 		var csrftoken=getCookie('csrftoken');
 
+		function fixedWidth(s) {
+		    var width=15;
+		    var blankChar=String.fromCharCode(9617);
+		    if (s.length>width) {
+			s=s.substring(0,width);
+		    }
+		    while (s.length<width) {
+			s+=blankChar;
+		    }
+		    s+=blankChar+blankChar+blankChar;
+		    return s;
+		}
+
 		$div.on('dblclick',function() {
 			$.ajax({
 				url: 'align',
@@ -41,6 +67,7 @@ define('alignment',['jquery','kinetic'],function($,kinetic) {
 				    datatype: 'json',
 				    data: {
 				    sequences: contents,
+				    directions: direction,
 					csrfmiddlewaretoken: csrftoken},
 				    beforeSend: function(xhr) {
 				    xhr.setRequestHeader("Accept", "application/json");
@@ -51,30 +78,36 @@ define('alignment',['jquery','kinetic'],function($,kinetic) {
 					if (job.hasOwnProperty(property)) {
 					    strings.push(job[property]);
 					    var $p=$('<p/>',{'class': 'alignmentSequence'}).text(job[property]);
-					    $div.append($p);
+					    $rightdiv.append($p);
+					    var $namep=$('<p/>',{'class': 'alignmentSequence'}).text(fixedWidth(property));
+					    $leftdiv.append($namep);
 					}
 				    }
-				    console.log(strings);
 				    var identityString="";
 				    var length=strings[0].length;
 				    for(var i=0;i<length;i++){
-					var c=strings[0].charAt(i);
-					var echar=String.fromCharCode(9608);
-					for(var s=1;s<strings.length;s++){
-					    if (c!=strings[s].charAt(i)) {
-						echar=String.fromCharCode(9617);
-						break;
-					    }
+					var cs=[];
+					for(var s=0;s<strings.length;s++){
+					    var c=strings[s].charAt(i);
+					    cs.push(c);
 					}
-					if(i==1207) {
-					    console.log(strings[0].charAt(i));
-					    console.log(strings[1].charAt(i));
-					    console.log(echar);
+					var echar=String.fromCharCode(9608);
+					if(cs.length>0){
+					    var c=cs[0];
+					    for(var s=1;s<cs.length;s++){
+						if (c!=cs[s]){
+						    echar=String.fromCharCode(9617);
+						    break;
+						}
+					    }
 					}
 					identityString+=echar;
 				    }
 				    var $p=$('<p/>',{'class': 'alignmentSequence'}).text(identityString);
-				    $div.append($p);
+				    $rightdiv.append($p);
+				    var $namep=$('<p/>',{'class': 'alignmentSequence'}).text(fixedWidth(""));
+				    $leftdiv.append($namep);
+				    $list.remove();
 				    },
 				    error: function(XMLHttpRequest,textStatus,errorThrown) {
 				    alert("Status: " + textStatus); alert("Error: " + errorThrown);
