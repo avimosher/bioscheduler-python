@@ -8,11 +8,12 @@ require.config({
 
 require({
 
-}, ['require', 'jquery', 'datatables', 'jquery-ui', 'tween.min', 'three/OrbitControls', 'three/CombinedCamera', 'three.min', 'three/threex.dynamictexture'], function(req, $) {
+    }, ['require', 'jquery', 'alignment', 'datatables', 'jquery-ui', 'tween.min', 'three/OrbitControls', 'three/CombinedCamera', 'three.min', 'three/threex.dynamictexture'], function(req, $, alignment) {
 	var objectloaders={};
 
 
 	$(function () {
+		$('#alignmentField').on("click",function(){alignment.openItem('','');});
 		function getCookie(name) {
 		    var cookieValue = null;
 		    if (document.cookie && document.cookie != '') {

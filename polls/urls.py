@@ -21,5 +21,8 @@ urlpatterns = patterns('',
                        url(r'^getlist$', views.getlist, name='getlist'),
                        url(r'^augmentlist$', views.augmentlist, name='augment list'),
                        url(r'^registerdropbox$', views.registerdropbox, name='registerdropbox'),
+                       url(r'^init_work$', views.init_work, name='init_work'),
+                       url(r'^poll_state$', views.poll_state, name='poll_state'),
+                       url(r'^align$', views.align, name='align'),
 )
 

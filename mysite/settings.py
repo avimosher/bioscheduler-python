@@ -50,6 +50,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'polls',
+    'testapp',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -72,8 +73,8 @@ ADMINS = (('Avi Robinson-Mosher', 'avi.mosher@gmail.com'))
 
 DATABASES = {
     'default': {
-        #'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'ENGINE': 'django.db.backends.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        #'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'bioscheduler',
         'USER': 'avimosher',
         'PASSWORD': 'WTFdon\'tshowthat'
@@ -99,3 +100,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# CELERY SETTINGS
+BROKER_URL = 'redis://127.0.0.1:24629/0'
+CELERY_RESULT_BACKEND = BROKER_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+

@@ -5,10 +5,12 @@ from django.template import RequestContext
 import json
 import sys
 import io
+import os
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from Bio.SeqFeature import SeqFeature
 from Bio import SeqIO
+from Bio import AlignIO
 from Bio.Alphabet import IUPAC
 import polls.SeqToJSON
 import dropbox
@@ -18,8 +20,37 @@ from openpyxl import load_workbook
 from openpyxl.writer.excel import save_virtual_workbook
 from ast import literal_eval
 import traceback
+from celery.result import AsyncResult
+from mysite.celery import app
+from polls.tasks import test2
+from subprocess import PIPE,Popen
 
 # Create your views here.
+
+def poll_state(request):
+    data={}
+    try:
+        if 'job' in request.POST:
+            job_id=request.POST['job']
+        else:
+            return HttpResponse('No job id')
+        job=AsyncResult(job_id)
+        data=job.result or job.state
+    except Exception as e:
+        print(str(e))
+       	traceback.print_exc()
+       	raise e
+    return HttpResponse(json.dumps(data),content_type='application/json')
+
+def init_work(request):
+    try:
+        app.set_current()
+        job=test2.delay('output')
+    except Exception as e:
+        print(str(e))
+       	traceback.print_exc()
+       	raise e
+    return HttpResponse(job.id)
 
 def index(request):
     return HttpResponse("Hello, world.  You're at the poll index.")
@@ -79,8 +110,8 @@ def simpletest(request):
 def get_dropbox_auth_flow(session):
 	app_key='p7b7j5v29v38bnk'
 	app_secret='q83heifozbsktdy'
-#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://bioscheduler.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
-	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"https://bioscheduler.com/polls/registerdropbox",session,"dropbox-auth-csrf-token")
+#	return dropbox.client.DropboxOAuth2Flow(app_key,app_secret,"http://localhost:8000/polls/registerdropbox",session,"dropbox-auth-csrf-token")
 
 def augmentlist(request):
 	newsequences=request.POST['oligos']
@@ -228,28 +259,70 @@ def deletesequence(request):
 		raise e
 	return HttpResponse("success", content_type='application/html')
 
-
-def getsequence(request):
-	absolute_path=request.POST['name']
+def getdropboxsequence(request,name):
+	fileName,fileExtension=os.path.splitext(name)
 	try:
 		client=dropbox.client.DropboxClient(request.session['access_token'])
-		with client.get_file(absolute_path) as f:
+		with client.get_file(name) as f:
 			s=f.read()
-	except Exception as e:
-		raise e
-	#s=render_to_string(absolute_path[1:])
-	output=io.StringIO()
-	try:
-		seq=SeqIO.read(io.StringIO(s.decode("utf-8")), "genbank")
-		#SeqIO.convert(io.StringIO(s.decode("utf-8")), "genbank",output,"json")
 	except Exception as e:
 		print(str(e),file=sys.stderr)
 		raise e
 
-	SeqIO.write(seq, output, "json")
-	jsonstring=output.getvalue()
-	print(jsonstring)
-	return HttpResponse(jsonstring[2:-2], content_type='application/json')
+	if fileExtension=='.gbk':
+		try:
+			seq=SeqIO.read(io.StringIO(s.decode("utf-8")), "genbank")
+		except Exception as e:
+			print(str(e),file=sys.stderr)
+			raise e
+		return seq
+	elif fileExtension=='.seq':
+		print(s)
+		class blank(object): pass
+		seq=blank()
+		seq.name=fileName
+		seq.seq="".join(s.decode("utf-8").split())
+		seq.features=[]
+		return seq
+	else:
+		print('impossible case')
+	return seq
+
+
+def align(request):
+	names=request.POST.getlist('sequences[]')
+	print(json.dumps(names))
+	fasta_string=""
+	aligned_sequences={}
+	try:
+		for name in names:
+			seq=getdropboxsequence(request,name)
+			print(dir(seq))
+			fasta_string+=">"+name+"\n"
+			fasta_string+=str(seq.seq)+"\n"
+		print(fasta_string)
+		cmd=Popen(['muscle'],stdout=PIPE,stdin=PIPE)
+		stdout_data,stderr_data=cmd.communicate(input=fasta_string.encode("utf-8"))
+		align=AlignIO.read(io.StringIO(stdout_data.decode('utf-8')),"fasta")
+		for record in align:
+			aligned_sequences[record.id]=str(record.seq)
+	except Exception as e:
+		print(str(e),file=sys.stderr)
+		raise e
+	return HttpResponse(json.dumps(aligned_sequences), content_type='application/json')
+
+def getsequence(request):
+	absolute_path=request.POST['name']
+	fileName,fileExtension=os.path.splitext(absolute_path)
+	seq=getdropboxsequence(request,absolute_path)
+	if fileExtension=='.gbk':
+		output=io.StringIO()
+		SeqIO.write(seq, output, "json")
+		jsonstring=output.getvalue()
+		outputstring=jsonstring[2:-2]
+	elif fileExtension=='.seq':
+		outputstring=json.dumps(seq)
+	return HttpResponse(outputstring, content_type='application/json')
 
 def getlocation(request):
 	print('getlocation')

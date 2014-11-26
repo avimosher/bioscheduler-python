@@ -69,6 +69,12 @@
     overflow: auto;
     overflow-x: hidden;
   }
+  .alignmentSequence
+  {
+    margin-top: 0;
+    margin-bottom: 0;
+    font-family: "Courier New", Courier, monospace;
+  }
   </style>
   <script id="mainscript" class="init">
 
@@ -183,6 +189,69 @@
   });
 */
 
+function poll_state(job) {
+  $.ajax({
+    url: 'poll_state',
+    type: 'POST',
+    datatype: 'json',
+    data: {
+      job: job,
+      csrfmiddlewaretoken: '{{ csrf_token }}'},
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');},
+    success: function(status) {
+      alert(status);
+      if (status!="SUCCESS") {
+        poll_state(job);
+      }
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown) {
+      alert("Status: " + textStatus); alert("Error: " + errorThrown);;
+    }
+  });
+}
+
+
+function init_work() {
+  $.ajax({
+    url: 'init_work',
+    type: 'POST',
+    datatype: 'json',
+    data: {
+      csrfmiddlewaretoken: '{{ csrf_token }}'},
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');},
+    success: function(job) {
+      alert(job);
+      poll_state(job);
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown) {
+      alert("Status: " + textStatus); alert("Error: " + errorThrown);
+    }
+  });
+}
+
+
+function alignment() {
+  $.ajax({
+    url: 'align',
+    type: 'POST',
+    datatype: 'json',
+    data: {
+      sequences: ['/AL080.gbk','AL080_His_TEV.gbk'],
+      csrfmiddlewaretoken: '{{ csrf_token }}'},
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("X-CSRFToken", '{{ csrf_token }}');},
+    success: function(job) {
+    },
+    error: function(XMLHttpRequest,textStatus,errorThrown) {
+      alert("Status: " + textStatus); alert("Error: " + errorThrown);
+    }
+  });
+}
 </script>
 </head>
 <body>
@@ -194,6 +263,8 @@
       <img id="molarityCalculatorMenu" src="{% static "icons/education32.svg" %}" onclick="molarityCalculator();" />
       <img id="fluidsGridMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="fluidsGridModule.fluidsGrid();" />
       <img id="locationsMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="locationsModule.locations();" />
+      <img id="locationsMenu" src="{% static "icons/waterup32.svg" %}" height="32" width="32" onclick="init_work();" />
+      <img id="alignmentField" src="{% static "icons/waterup32.svg" %}" height="32" width="32" />
     </h1>
   </div>
   <!--  <div>Icons made by Freepik from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a>         is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div> -->
