@@ -32,6 +32,10 @@ require({
 		var csrftoken = getCookie('csrftoken');
 
 		var objectloader=function(moduleName,item) {
+		    if (!moduleName){
+			alert(item.hidden);
+		    }
+		    else{
 			req([moduleName],function(module) {
 				$.ajax({
 				  url: module.loadURL,
@@ -48,6 +52,7 @@ require({
 				  	module.openItem(result,item);},
 				  error: function(XMLHttpRequest,textStatus,errorThrown) {
 				    alert("Status: " + textStatus); alert("Error: " + errorThrown);}});});
+		    }
 		};
 
 		var objectlocater=function(moduleName,item) {
@@ -109,8 +114,9 @@ require({
 		    $('#example tbody').on('dblclick', 'tr', function(evt) {
 		      var name=datatable.fnGetData(this,0);
 		      var fnName=datatable.fnGetData(this,5);
-		      if (evt.shiftKey) {objectlocater(fnName,{name: name});}
-		      else {objectloader(fnName,{name: name});}
+		      var hiddenData=datatable.fnGetData(this,2);
+		      if (evt.shiftKey) {objectlocater(fnName,{name: name,hidden: hiddenData});}
+		      else {objectloader(fnName,{name: name, hidden: hiddenData});}
 		    });
 		    //$('#example > tbody > tr').draggable({
 		    $(datatable.fnGetNodes()).draggable({

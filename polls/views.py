@@ -190,7 +190,7 @@ def getlist(request):
 							complementary=sheet.cell_value(current_row,complementary_column)
 						except:
 							pass
-						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),'kineticsequence'])
+						data.append([name,len(sequence),sequence.upper(),complementary.upper(),extension.upper(),''])
 						current_row+=1
 			else:
 				data.append([obj['path'],obj['size'],'','','','kineticsequence'])
