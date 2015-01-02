@@ -39,7 +39,7 @@ define('kineticsequence',['jquery','tmcalc_support','kinetic','kinetic.editable'
         selection.start=forwardIndex;
         selection.end=forwardIndex+pasteData.length;}
       else {
-        var reverseIndex=dna.indexOf(reverse(complement(pasteData)));
+        var reverseIndex=dna.indexOf(sms.reverse(sms.complement(pasteData)));
         if (reverseIndex>-1) {
           selection.end=reverseIndex;
           selection.start=reverseIndex+pasteData.length;}}
@@ -150,7 +150,7 @@ define('kineticsequence',['jquery','tmcalc_support','kinetic','kinetic.editable'
           if(row[4]) {complementarySequence=row[4];}
           var foundIndex=dna.indexOf(complementarySequence);
           addFeature(foundIndex,row,complementarySequence,1);
-          var reverseComplement=reverse(complement(getSequenceFromFasta(complementarySequence)));
+          var reverseComplement=sms.reverse(sms.complement(sms.getSequenceFromFasta(complementarySequence)));
           var reverseFoundIndex=dna.indexOf(reverseComplement);
           addFeature(reverseFoundIndex,row,complementarySequence,-1);}});
       initializeDisplay();});

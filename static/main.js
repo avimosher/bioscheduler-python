@@ -1,14 +1,17 @@
 require.config({
+	shim: {
+		'jquery.contextMenu': ['jquery']
+	},
 	paths: {
 		'datatables': 'jquery-ui/jquery.dataTables',
-		'jquery-ui': 'jquery-ui/jquery-ui'
+		'jquery-ui': 'jquery-ui/jquery-ui',
+		'jquery.contextMenu': 'contextMenu/jquery.contextMenu'
 	},
 	urlArgs: "bust="+(new Date()).getTime()
 });
 
 require({
-
-    }, ['require', 'jquery', 'alignment', 'datatables', 'jquery-ui', 'tween.min', 'three/OrbitControls', 'three/CombinedCamera', 'three.min', 'three/threex.dynamictexture'], function(req, $, alignment) {
+}, ['require', 'jquery', 'alignment', 'datatables', 'jquery-ui', 'tween.min', 'three/OrbitControls', 'three/CombinedCamera', 'three.min', 'three/threex.dynamictexture', 'jquery.contextMenu'], function(req, $, alignment) {
 	var objectloaders={};
 
 
@@ -118,5 +121,52 @@ require({
 		        var new_ele=$('<div class="inventoryItem">'+name+'</div>');
 		        return new_ele.clone();},
 		      appendTo: 'body'});}});
+
+		$.contextMenu({
+		  selector: ".inventoryItem",
+		  items: {
+		    "delete": {name: "Delete", icon: "delete"}
+		  },
+		  callback: function(key,options) {
+		    var row=options.$trigger;
+		    var path=row.context.cells[0].textContent;
+		    console.log(options.$trigger.context.cells[0].textContent);
+		    $.ajax({
+		      url: 'deletesequence',
+		      type: 'POST',
+		      datatype: 'json',
+		      data: {
+		        path: path,
+		        csrfmiddlewaretoken: csrftoken},
+		      beforeSend: function(xhr) {
+		        xhr.setRequestHeader("Accept", "application/json");
+		        xhr.setRequestHeader("X-CSRFToken", csrftoken);},
+		      success: function(seq) {
+		        $("#example").DataTable().row(row).remove().draw();
+		      },
+		      error: function(XMLHttpRequest,textStatus,errorThrown) {
+		        alert("Status: " + textStatus); alert("Error: " + errorThrown);}});
+		  }
+		});
+
+		$.contextMenu({
+		    selector: ".contain_canvas",
+		    build: function($trigger,e) {
+		      return {
+		        callback: function(key, options) {
+		          if (key=='map') {options.$trigger.trigger("mapoligos");}
+		          else if (key=='saveprimers') {options.$trigger.trigger("saveprimers");}
+		          else if (key=='createfeature') {options.$trigger.trigger("createfeature");}
+		          else if (key=='deletefeature') {options.$trigger.trigger("deletefeature",e);}
+		          else if (key=='save') {options.$trigger.trigger("save");}
+		        },
+		        items: {
+		          "map": {name: "Map Oligos", icon: "edit"},
+		          "saveprimers": {name: "Save Primers", icon: "edit2"},
+		          "createfeature": {name: "Create Feature", icon: "cut"},
+		          "deletefeature": {name: "Delete Feature", icon: "cut"},
+		          "save": {name: "Save", icon: "save"},
+		          "sep1": "---------",
+		          "quit": {name: "Quit", icon: "quit"}}}}});
 	});
 })

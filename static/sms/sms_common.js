@@ -1037,5 +1037,8 @@ function writeShuffledSequence (sequence)	{
 	return true;
 }
 	return {getGeneticCodeMatchExp: getGeneticCodeMatchExp,
-		getGeneticCodeMatchResult: getGeneticCodeMatchResult};
+		getGeneticCodeMatchResult: getGeneticCodeMatchResult,
+		reverse: reverse,
+		complement: complement,
+		getSequenceFromFasta: getSequenceFromFasta};
 });
