@@ -269,7 +269,7 @@ def getdropboxsequence(request,name):
 		print(str(e),file=sys.stderr)
 		raise e
 
-	if fileExtension=='.gbk':
+	if fileExtension in ('.gbk','.gb'):
 		try:
 			seq=SeqIO.read(io.StringIO(s.decode("utf-8")), "genbank")
 		except Exception as e:
@@ -316,7 +316,7 @@ def getsequence(request):
 	absolute_path=request.POST['name']
 	fileName,fileExtension=os.path.splitext(absolute_path)
 	seq=getdropboxsequence(request,absolute_path)
-	if fileExtension=='.gbk':
+	if fileExtension in ('.gbk', '.gb'):
 		output=io.StringIO()
 		SeqIO.write(seq, output, "json")
 		jsonstring=output.getvalue()
