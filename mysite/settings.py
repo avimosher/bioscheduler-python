@@ -51,6 +51,7 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'polls',
     'testapp',
+    'heatmap',
 )
 
 MIDDLEWARE_CLASSES = (
